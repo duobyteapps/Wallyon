@@ -7,6 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "wallyon",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.duobyteapps.wallyon",
+      "supportsTablet": false
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
