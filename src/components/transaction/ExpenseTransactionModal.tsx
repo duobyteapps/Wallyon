@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -32,12 +32,6 @@ type ExpenseTransactionModalProps = {
   onSave: (transactions: Transaction[]) => void;
 };
 
-type DropdownLayout = {
-  top: number;
-  left: number;
-  width: number;
-};
-
 const parseTransactionDate = (dateText: string) => {
   const numericDateMatch = dateText.match(
     /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/,
@@ -68,12 +62,9 @@ export default function ExpenseTransactionModal({
   onOpenFieldsModal,
   onSave,
 }: ExpenseTransactionModalProps) {
-  const selectButtonRef = useRef<View>(null);
 
   const [selectedField, setSelectedField] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
-  const [selectDropdownLayout, setSelectDropdownLayout] =
-    useState<DropdownLayout | null>(null);
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -91,7 +82,6 @@ export default function ExpenseTransactionModal({
   const resetForm = () => {
     setSelectedField("");
     setIsSelectOpen(false);
-    setSelectDropdownLayout(null);
     setAmount("");
     setNote("");
     setIsInstallment(false);
@@ -116,8 +106,7 @@ export default function ExpenseTransactionModal({
       setSelectedDate(parsedDate);
       setFirstInstallmentDate(parsedDate);
       setIsSelectOpen(false);
-      setSelectDropdownLayout(null);
-      setIsDatePickerVisible(false);
+        setIsDatePickerVisible(false);
       setIsInstallmentDatePickerVisible(false);
       return;
     }
@@ -132,32 +121,16 @@ export default function ExpenseTransactionModal({
 
   const handleOpenFieldsModal = () => {
     setIsSelectOpen(false);
-    setSelectDropdownLayout(null);
     onOpenFieldsModal();
   };
 
   const handleOpenSelect = () => {
-    if (isSelectOpen) {
-      setIsSelectOpen(false);
-      setSelectDropdownLayout(null);
-      return;
-    }
-
-    selectButtonRef.current?.measureInWindow((x, y, width, height) => {
-      setSelectDropdownLayout({
-        top: y + height + 6,
-        left: x,
-        width,
-      });
-
-      setIsSelectOpen(true);
-    });
+    setIsSelectOpen((current) => !current);
   };
 
   const handleSelectField = (field: string) => {
     setSelectedField(field);
     setIsSelectOpen(false);
-    setSelectDropdownLayout(null);
   };
 
   const handleSave = () => {
@@ -295,11 +268,7 @@ export default function ExpenseTransactionModal({
 
                 <View style={styles.selectWrapper}>
                   <View style={styles.selectRow}>
-                    <View
-                      ref={selectButtonRef}
-                      collapsable={false}
-                      style={styles.selectButtonWrapper}
-                    >
+                    <View style={styles.selectButtonWrapper}>
                       <TouchableOpacity
                         activeOpacity={0.85}
                         style={[
@@ -332,6 +301,48 @@ export default function ExpenseTransactionModal({
                       iconSize={22}
                     />
                   </View>
+                  {isSelectOpen ? (
+                    <View style={styles.dropdown}>
+                      <FlatList
+                        data={["", ...expenseFields]}
+                        keyExtractor={(item, index) => `${item || "empty"}-${index}`}
+                        style={styles.dropdownScroll}
+                        contentContainerStyle={styles.dropdownContent}
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                        renderItem={({ item }) => {
+                          const isPlaceholder = item === "";
+                          const isSelected = selectedField === item;
+
+                          return (
+                            <TouchableOpacity
+                              activeOpacity={0.85}
+                              style={[
+                                styles.dropdownItem,
+                                isSelected && styles.dropdownItemActive,
+                              ]}
+                              onPress={() => handleSelectField(item)}
+                            >
+                              {!isPlaceholder && selectedField === item ? (
+                                <Ionicons
+                                  name="checkmark"
+                                  size={18}
+                                  color={colors.expense}
+                                />
+                              ) : (
+                                <View style={styles.dropdownIconPlaceholder} />
+                              )}
+
+                              <Text style={styles.dropdownText}>
+                                {isPlaceholder ? "Seçiniz" : item}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        }}
+                      />
+                    </View>
+                  ) : null}
                 </View>
 
                 <View style={styles.twoColumnRow}>
@@ -352,8 +363,7 @@ export default function ExpenseTransactionModal({
                       value={selectedDateText}
                       onPress={() => {
                         setIsSelectOpen(false);
-                        setSelectDropdownLayout(null);
-                        setIsDatePickerVisible(true);
+                                            setIsDatePickerVisible(true);
                       }}
                     />
                   </View>
@@ -385,8 +395,7 @@ export default function ExpenseTransactionModal({
                           value={firstInstallmentDateText}
                           onPress={() => {
                             setIsSelectOpen(false);
-                            setSelectDropdownLayout(null);
-                            setIsInstallmentDatePickerVisible(true);
+                                                    setIsInstallmentDatePickerVisible(true);
                           }}
                         />
                       </View>
@@ -423,76 +432,6 @@ export default function ExpenseTransactionModal({
               </View>
             </Pressable>
           </KeyboardAvoidingView>
-        </Pressable>
-      </Modal>
-
-      <Modal
-        visible={visible && isSelectOpen}
-        transparent
-        animationType="none"
-        onRequestClose={() => {
-          setIsSelectOpen(false);
-          setSelectDropdownLayout(null);
-        }}
-        statusBarTranslucent
-      >
-        <Pressable
-          style={styles.dropdownModalOverlay}
-          onPress={() => {
-            setIsSelectOpen(false);
-            setSelectDropdownLayout(null);
-          }}
-        >
-          <View
-            style={[
-              styles.dropdown,
-              {
-                top: selectDropdownLayout?.top ?? 150,
-                left: selectDropdownLayout?.left ?? 18,
-                width: selectDropdownLayout?.width ?? 260,
-              },
-            ]}
-            onStartShouldSetResponder={() => true}
-          >
-            <FlatList
-              data={["", ...expenseFields]}
-              keyExtractor={(item, index) => `${item || "empty"}-${index}`}
-              style={styles.dropdownScroll}
-              contentContainerStyle={styles.dropdownContent}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator
-              renderItem={({ item }) => {
-                const isPlaceholder = item === "";
-                const isSelected = selectedField === item;
-
-                return (
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    style={[
-                      styles.dropdownItem,
-                      isSelected && styles.dropdownItemActive,
-                    ]}
-                    onPress={() => handleSelectField(item)}
-                  >
-                    {!isPlaceholder && selectedField === item ? (
-                      <Ionicons
-                        name="checkmark"
-                        size={18}
-                        color={colors.expense}
-                      />
-                    ) : (
-                      <View style={styles.dropdownIconPlaceholder} />
-                    )}
-
-                    <Text style={styles.dropdownText}>
-                      {isPlaceholder ? "Seçiniz" : item}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
         </Pressable>
       </Modal>
 
@@ -604,6 +543,7 @@ const styles = StyleSheet.create({
     position: "relative",
     zIndex: 20,
     marginBottom: 12,
+    overflow: "visible",
   },
   selectRow: {
     flexDirection: "row",
@@ -638,14 +578,8 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 
-  dropdownModalOverlay: {
-    flex: 1,
-    backgroundColor: "transparent",
-  },
   dropdown: {
-    position: "absolute",
-    zIndex: 999,
-    elevation: 999,
+    marginTop: 6,
     borderRadius: 13,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.65)",
