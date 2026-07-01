@@ -371,17 +371,19 @@ export default function ExpenseTransactionModal({
       </Modal>
 
       <AppDatePickerModal
-        visible={visible && isDatePickerVisible}
+        visible={isDatePickerVisible}
         value={selectedDate}
         onClose={() => setIsDatePickerVisible(false)}
         onConfirm={setSelectedDate}
+        useNativeModal={false}
       />
 
       <AppDatePickerModal
-        visible={visible && isInstallmentDatePickerVisible}
+        visible={isInstallmentDatePickerVisible}
         value={firstInstallmentDate}
         onClose={() => setIsInstallmentDatePickerVisible(false)}
         onConfirm={setFirstInstallmentDate}
+        useNativeModal={false}
       />
     </>
   );

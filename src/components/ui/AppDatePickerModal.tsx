@@ -10,6 +10,7 @@ type AppDatePickerModalProps = {
   value: Date;
   onClose: () => void;
   onConfirm: (date: Date) => void;
+  useNativeModal?: boolean;
 };
 
 export default function AppDatePickerModal({
@@ -17,6 +18,7 @@ export default function AppDatePickerModal({
   value,
   onClose,
   onConfirm,
+  useNativeModal = true,
 }: AppDatePickerModalProps) {
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
@@ -64,84 +66,93 @@ export default function AppDatePickerModal({
     onClose();
   };
 
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
-          style={styles.modalCard}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <Text style={styles.title}>Tarih Seç</Text>
+  const content = (
+    <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={styles.modalCard} onPress={() => {}}>
+        <Text style={styles.title}>Tarih Seç</Text>
+        <Text style={styles.description}>Gün, ay ve yıl bilgilerini gir.</Text>
 
-          <Text style={styles.description}>
-            Gün, ay ve yıl bilgilerini gir.
-          </Text>
-
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <Text style={styles.label}>Gün</Text>
-
-              <AppInput
-                value={day}
-                onChangeText={setDay}
-                placeholder="31"
-                keyboardType="number-pad"
-                height={46}
-                maxLength={2}
-              />
-            </View>
-
-            <View style={styles.column}>
-              <Text style={styles.label}>Ay</Text>
-
-              <AppInput
-                value={month}
-                onChangeText={setMonth}
-                placeholder="05"
-                keyboardType="number-pad"
-                height={46}
-                maxLength={2}
-              />
-            </View>
-
-            <View style={styles.column}>
-              <Text style={styles.label}>Yıl</Text>
-
-              <AppInput
-                value={year}
-                onChangeText={setYear}
-                placeholder="2026"
-                keyboardType="number-pad"
-                height={46}
-                maxLength={4}
-              />
-            </View>
-          </View>
-
-          <View style={styles.footer}>
-            <AppButton
-              title="Vazgeç"
-              onPress={onClose}
-              variant="secondary"
-              width={84}
-              height={42}
-            />
-
-            <AppButton
-              title="Seç"
-              onPress={handleConfirm}
-              variant="primary"
-              width={84}
-              height={42}
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <Text style={styles.label}>Gün</Text>
+            <AppInput
+              value={day}
+              onChangeText={setDay}
+              keyboardType="number-pad"
+              maxLength={2}
+              placeholder="GG"
             />
           </View>
-        </Pressable>
+
+          <View style={styles.column}>
+            <Text style={styles.label}>Ay</Text>
+            <AppInput
+              value={month}
+              onChangeText={setMonth}
+              keyboardType="number-pad"
+              maxLength={2}
+              placeholder="AA"
+            />
+          </View>
+
+          <View style={styles.column}>
+            <Text style={styles.label}>Yıl</Text>
+            <AppInput
+              value={year}
+              onChangeText={setYear}
+              keyboardType="number-pad"
+              maxLength={4}
+              placeholder="YYYY"
+            />
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <AppButton
+            title="Vazgeç"
+            variant="secondary"
+            onPress={onClose}
+            style={styles.footerButton}
+          />
+
+          <AppButton
+            title="Seç"
+            onPress={handleConfirm}
+            style={styles.footerButton}
+          />
+        </View>
       </Pressable>
+    </Pressable>
+  );
+
+  if (!visible) {
+    return null;
+  }
+
+  if (!useNativeModal) {
+    return <View style={styles.inlineOverlay}>{content}</View>;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      {content}
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  inlineOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 9999,
+    elevation: 9999,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.72)",
@@ -191,5 +202,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 8,
+  },
+  footerButton: {
+    minWidth: 96,
   },
 });

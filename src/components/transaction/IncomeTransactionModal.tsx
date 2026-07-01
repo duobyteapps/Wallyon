@@ -247,10 +247,11 @@ export default function IncomeTransactionModal({
       </Modal>
 
       <AppDatePickerModal
-        visible={visible && isDatePickerVisible}
+        visible={isDatePickerVisible}
         value={selectedDate}
         onClose={() => setIsDatePickerVisible(false)}
         onConfirm={setSelectedDate}
+        useNativeModal={false}
       />
     </>
   );
