@@ -35,6 +35,24 @@ export default function ExpenseFieldsModal({
     setFieldName("");
   };
 
+  const handleDeleteConfirm = (field: string) => {
+    Alert.alert(
+      "Alan Silinsin mi?",
+      `"${field}" gider alanını silmek istediğine emin misin?`,
+      [
+        {
+          text: "Vazgeç",
+          style: "cancel",
+        },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: () => onDeleteField(field),
+        },
+      ],
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -94,7 +112,7 @@ export default function ExpenseFieldsModal({
 
                   <AppIconButton
                     icon="trash-outline"
-                    onPress={() => onDeleteField(item)}
+                    onPress={() => handleDeleteConfirm(item)}
                     size={38}
                     iconSize={20}
                     iconColor="#fda4af"
@@ -130,7 +148,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 10,
   },
-
   modalCard: {
     width: "100%",
     maxWidth: 480,
@@ -141,13 +158,11 @@ const styles = StyleSheet.create({
     borderColor: colors.purpleBorder,
     padding: 16,
   },
-
   title: {
     color: colors.white,
     fontSize: 22,
     fontWeight: "900",
   },
-
   description: {
     marginTop: 6,
     color: colors.label,
@@ -155,7 +170,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "600",
   },
-
   label: {
     marginTop: 18,
     marginBottom: 6,
@@ -163,22 +177,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
-
   addRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-
   input: {
     flex: 1,
     minWidth: 0,
   },
-
   addButton: {
     flexShrink: 0,
   },
-
   sectionTitle: {
     marginTop: 20,
     marginBottom: 10,
@@ -186,16 +196,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "900",
   },
-
   fieldsListBox: {
     height: 162,
   },
-
   fieldsListContent: {
     gap: 8,
     paddingBottom: 4,
   },
-
   fieldItem: {
     minHeight: 48,
     borderRadius: 14,
@@ -209,7 +216,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
-
   fieldText: {
     flex: 1,
     minWidth: 0,
@@ -217,7 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-
   footer: {
     marginTop: 18,
     paddingTop: 12,
@@ -226,7 +231,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
   },
-
   closeButton: {
     flexShrink: 0,
   },
