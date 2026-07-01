@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
 import {
   Dimensions,
-  FlatList,
   Modal,
   Platform,
   Pressable,
@@ -38,6 +37,7 @@ type DropdownLayout = {
 };
 
 const ITEM_HEIGHT = 42;
+const DROPDOWN_VERTICAL_PADDING = 8;
 const MAX_VISIBLE_ITEM_COUNT = 4;
 
 export default function AppSelectBox({
@@ -59,7 +59,11 @@ export default function AppSelectBox({
   );
 
   const dropdownItems = ["", ...options];
-  const maxDropdownHeight = ITEM_HEIGHT * MAX_VISIBLE_ITEM_COUNT;
+
+  const dropdownHeight = Math.min(
+    dropdownItems.length * ITEM_HEIGHT + DROPDOWN_VERTICAL_PADDING,
+    ITEM_HEIGHT * MAX_VISIBLE_ITEM_COUNT + DROPDOWN_VERTICAL_PADDING,
+  );
 
   const closeDropdown = () => {
     setDropdownLayout(null);
@@ -83,10 +87,6 @@ export default function AppSelectBox({
 
     selectButtonWrapperRef.current?.measureInWindow((x, y, width, height) => {
       const screenHeight = Dimensions.get("window").height;
-      const dropdownHeight = Math.min(
-        dropdownItems.length * ITEM_HEIGHT,
-        maxDropdownHeight,
-      );
 
       const dropdownTop =
         y + height + 6 + dropdownHeight > screenHeight - 16
@@ -108,13 +108,7 @@ export default function AppSelectBox({
     onChange(selectedValue);
   };
 
-  const renderDropdownItem = ({
-    item,
-    index,
-  }: {
-    item: string;
-    index: number;
-  }) => {
+  const renderDropdownItem = (item: string, index: number) => {
     const isPlaceholder = item === "";
     const isSelected = value === item;
 
@@ -141,53 +135,42 @@ export default function AppSelectBox({
     );
   };
 
-  const renderIosDropdownItems = () => (
+  const renderDropdownItems = () => (
     <ScrollView
       nestedScrollEnabled
+      scrollEnabled={dropdownItems.length > MAX_VISIBLE_ITEM_COUNT}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={
         dropdownItems.length > MAX_VISIBLE_ITEM_COUNT
       }
-      style={[styles.dropdownScroll, { maxHeight: maxDropdownHeight }]}
-      contentContainerStyle={styles.dropdownContent}
-    >
-      {dropdownItems.map((item, index) => renderDropdownItem({ item, index }))}
-    </ScrollView>
-  );
-
-  const renderAndroidDropdownItems = () => (
-    <FlatList
-      data={dropdownItems}
-      keyExtractor={(item, index) => `${item || "empty"}-${index}`}
-      renderItem={renderDropdownItem}
-      keyboardShouldPersistTaps="handled"
-      nestedScrollEnabled
-      scrollEnabled
       bounces={false}
       overScrollMode="always"
-      showsVerticalScrollIndicator={
-        dropdownItems.length > MAX_VISIBLE_ITEM_COUNT
-      }
-      style={[styles.dropdownScroll, { maxHeight: maxDropdownHeight }]}
+      style={[styles.dropdownScroll, { height: dropdownHeight }]}
       contentContainerStyle={styles.dropdownContent}
-      getItemLayout={(_, index) => ({
-        length: ITEM_HEIGHT,
-        offset: ITEM_HEIGHT * index,
-        index,
-      })}
-    />
+    >
+      {dropdownItems.map((item, index) => renderDropdownItem(item, index))}
+    </ScrollView>
   );
 
   return (
     <>
-      <View style={[styles.container, containerStyle]}>
+      <View
+        style={[
+          styles.container,
+          isOpen && styles.containerOpen,
+          containerStyle,
+        ]}
+      >
         {label ? <Text style={styles.label}>{label}</Text> : null}
 
-        <View style={styles.selectRow}>
+        <View style={[styles.selectRow, isOpen && styles.selectRowOpen]}>
           <View
             ref={selectButtonWrapperRef}
             collapsable={false}
-            style={styles.selectButtonWrapper}
+            style={[
+              styles.selectButtonWrapper,
+              isOpen && styles.selectButtonWrapperOpen,
+            ]}
           >
             <TouchableOpacity
               activeOpacity={0.85}
@@ -209,7 +192,7 @@ export default function AppSelectBox({
             </TouchableOpacity>
 
             {isOpen && Platform.OS === "ios" ? (
-              <View style={styles.iosDropdown}>{renderIosDropdownItems()}</View>
+              <View style={styles.iosDropdown}>{renderDropdownItems()}</View>
             ) : null}
           </View>
 
@@ -227,7 +210,7 @@ export default function AppSelectBox({
         onRequestClose={closeDropdown}
       >
         <View style={styles.dropdownModalRoot}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeDropdown} />
+          <Pressable style={styles.dropdownBackdrop} onPress={closeDropdown} />
 
           {dropdownLayout ? (
             <View
@@ -237,12 +220,11 @@ export default function AppSelectBox({
                   top: dropdownLayout.top,
                   left: dropdownLayout.left,
                   width: dropdownLayout.width,
-                  maxHeight: maxDropdownHeight,
+                  height: dropdownHeight,
                 },
               ]}
-              onStartShouldSetResponder={() => true}
             >
-              {renderAndroidDropdownItems()}
+              {renderDropdownItems()}
             </View>
           ) : null}
         </View>
@@ -254,9 +236,11 @@ export default function AppSelectBox({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 12,
+    overflow: "visible",
+  },
+  containerOpen: {
     zIndex: 9999,
     elevation: 9999,
-    overflow: "visible",
   },
   label: {
     color: "#cbd5e1",
@@ -268,17 +252,21 @@ const styles = StyleSheet.create({
     height: 46,
     flexDirection: "row",
     gap: 8,
+    overflow: "visible",
+  },
+  selectRowOpen: {
     zIndex: 9999,
     elevation: 9999,
-    overflow: "visible",
   },
   selectButtonWrapper: {
     flex: 1,
     height: 46,
     position: "relative",
+    overflow: "visible",
+  },
+  selectButtonWrapperOpen: {
     zIndex: 9999,
     elevation: 9999,
-    overflow: "visible",
   },
   selectButton: {
     width: "100%",
@@ -291,8 +279,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    zIndex: 10000,
-    elevation: 10000,
   },
   selectButtonActive: {
     borderColor: colors.white,
@@ -324,9 +310,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "transparent",
   },
+  dropdownBackdrop: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 1,
+    elevation: 1,
+  },
   androidDropdown: {
     position: "absolute",
-    zIndex: 20000,
+    zIndex: 2,
     elevation: 20000,
     borderRadius: 13,
     borderWidth: 1,
