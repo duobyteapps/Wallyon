@@ -365,26 +365,26 @@ export default function ExpenseTransactionModal({
                   onPress={handleSave}
                 />
               </View>
+
+              <AppDatePickerModal
+                visible={isDatePickerVisible}
+                value={selectedDate}
+                onClose={() => setIsDatePickerVisible(false)}
+                onConfirm={setSelectedDate}
+                useNativeModal={false}
+              />
+
+              <AppDatePickerModal
+                visible={isInstallmentDatePickerVisible}
+                value={firstInstallmentDate}
+                onClose={() => setIsInstallmentDatePickerVisible(false)}
+                onConfirm={setFirstInstallmentDate}
+                useNativeModal={false}
+              />
             </Pressable>
           </KeyboardAvoidingView>
         </Pressable>
       </Modal>
-
-      <AppDatePickerModal
-        visible={isDatePickerVisible}
-        value={selectedDate}
-        onClose={() => setIsDatePickerVisible(false)}
-        onConfirm={setSelectedDate}
-        useNativeModal={false}
-      />
-
-      <AppDatePickerModal
-        visible={isInstallmentDatePickerVisible}
-        value={firstInstallmentDate}
-        onClose={() => setIsInstallmentDatePickerVisible(false)}
-        onConfirm={setFirstInstallmentDate}
-        useNativeModal={false}
-      />
     </>
   );
 }

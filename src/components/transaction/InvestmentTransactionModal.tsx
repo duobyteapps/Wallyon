@@ -242,18 +242,19 @@ export default function InvestmentTransactionModal({
                   onPress={handleSave}
                 />
               </View>
+
+              <AppDatePickerModal
+                visible={isDatePickerVisible}
+                value={selectedDate}
+                onClose={() => setIsDatePickerVisible(false)}
+                onConfirm={setSelectedDate}
+                useNativeModal={false}
+              />
             </Pressable>
           </KeyboardAvoidingView>
         </Pressable>
+        x
       </Modal>
-
-      <AppDatePickerModal
-        visible={isDatePickerVisible}
-        value={selectedDate}
-        onClose={() => setIsDatePickerVisible(false)}
-        onConfirm={setSelectedDate}
-        useNativeModal={false}
-      />
     </>
   );
 }

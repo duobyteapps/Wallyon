@@ -149,9 +149,13 @@ export default function AppDatePickerModal({
 
 const styles = StyleSheet.create({
   inlineOverlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 9999,
-    elevation: 9999,
+    position: "absolute",
+    top: -18,
+    right: -18,
+    bottom: -18,
+    left: -18,
+    zIndex: 99999,
+    elevation: 99999,
   },
   backdrop: {
     flex: 1,
@@ -168,6 +172,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.purpleBorder,
     padding: 16,
+    zIndex: 100000,
+    elevation: 100000,
   },
   title: {
     color: colors.white,
