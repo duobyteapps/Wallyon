@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,8 +19,8 @@ import { addMonthsToDate, formatDateTR } from "../../utils/dateUtils";
 import AppButton from "../ui/AppButton";
 import AppDateField from "../ui/AppDateField";
 import AppDatePickerModal from "../ui/AppDatePickerModal";
-import AppIconButton from "../ui/AppIconButton";
 import AppInput from "../ui/AppInput";
+import AppSelectBox from "../ui/AppSelectBox";
 
 type ExpenseTransactionModalProps = {
   visible: boolean;
@@ -62,7 +61,6 @@ export default function ExpenseTransactionModal({
   onOpenFieldsModal,
   onSave,
 }: ExpenseTransactionModalProps) {
-
   const [selectedField, setSelectedField] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
@@ -106,7 +104,7 @@ export default function ExpenseTransactionModal({
       setSelectedDate(parsedDate);
       setFirstInstallmentDate(parsedDate);
       setIsSelectOpen(false);
-        setIsDatePickerVisible(false);
+      setIsDatePickerVisible(false);
       setIsInstallmentDatePickerVisible(false);
       return;
     }
@@ -124,21 +122,12 @@ export default function ExpenseTransactionModal({
     onOpenFieldsModal();
   };
 
-  const handleOpenSelect = () => {
-    setIsSelectOpen((current) => !current);
-  };
-
-  const handleSelectField = (field: string) => {
-    setSelectedField(field);
-    setIsSelectOpen(false);
-  };
-
   const handleSave = () => {
     const parsedAmount = Number(amount.replace(",", "."));
     const parsedInstallmentCount = Number(installmentCount);
 
     if (!selectedField) {
-      Alert.alert("Uyarı", "Lütfen alan seç.");
+      Alert.alert("Uyarı", "Lütfen kategori seç.");
       return;
     }
 
@@ -222,6 +211,7 @@ export default function ExpenseTransactionModal({
                   <Text style={styles.title}>
                     {editTransaction ? "Gider Güncelle" : "Gider Ekle"}
                   </Text>
+
                   <Text style={styles.description}>
                     İşlem detaylarını doldur ve kaydet.
                   </Text>
@@ -264,90 +254,26 @@ export default function ExpenseTransactionModal({
                 nestedScrollEnabled
                 scrollEnabled={!isSelectOpen}
               >
-                <Text style={styles.label}>Alan</Text>
-
-                <View style={styles.selectWrapper}>
-                  <View style={styles.selectRow}>
-                    <View style={styles.selectButtonWrapper}>
-                      <TouchableOpacity
-                        activeOpacity={0.85}
-                        style={[
-                          styles.selectButton,
-                          isSelectOpen && styles.selectButtonActive,
-                        ]}
-                        onPress={handleOpenSelect}
-                      >
-                        <Text
-                          style={[
-                            styles.selectText,
-                            !selectedField && styles.placeholderText,
-                          ]}
-                        >
-                          {selectedField || "Seçiniz"}
-                        </Text>
-
-                        <Ionicons
-                          name={isSelectOpen ? "chevron-up" : "chevron-down"}
-                          size={18}
-                          color={colors.white}
-                        />
-                      </TouchableOpacity>
-                    </View>
-
-                    <AppIconButton
-                      icon="add"
-                      onPress={handleOpenFieldsModal}
-                      size={46}
-                      iconSize={22}
-                    />
-                  </View>
-                  {isSelectOpen ? (
-                    <View style={styles.dropdown}>
-                      <FlatList
-                        data={["", ...expenseFields]}
-                        keyExtractor={(item, index) => `${item || "empty"}-${index}`}
-                        style={styles.dropdownScroll}
-                        contentContainerStyle={styles.dropdownContent}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator
-                        renderItem={({ item }) => {
-                          const isPlaceholder = item === "";
-                          const isSelected = selectedField === item;
-
-                          return (
-                            <TouchableOpacity
-                              activeOpacity={0.85}
-                              style={[
-                                styles.dropdownItem,
-                                isSelected && styles.dropdownItemActive,
-                              ]}
-                              onPress={() => handleSelectField(item)}
-                            >
-                              {!isPlaceholder && selectedField === item ? (
-                                <Ionicons
-                                  name="checkmark"
-                                  size={18}
-                                  color={colors.expense}
-                                />
-                              ) : (
-                                <View style={styles.dropdownIconPlaceholder} />
-                              )}
-
-                              <Text style={styles.dropdownText}>
-                                {isPlaceholder ? "Seçiniz" : item}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        }}
-                      />
-                    </View>
-                  ) : null}
-                </View>
+                <AppSelectBox
+                  label="Kategori"
+                  value={selectedField}
+                  placeholder="Gider kategorisi seçiniz"
+                  options={expenseFields}
+                  isOpen={isSelectOpen}
+                  onToggle={() => setIsSelectOpen((current) => !current)}
+                  onChange={(value) => {
+                    setSelectedField(value);
+                    setIsSelectOpen(false);
+                  }}
+                  onAddPress={handleOpenFieldsModal}
+                  activeColor={colors.expense}
+                  activeBackgroundColor="rgba(255, 92, 124, 0.12)"
+                />
 
                 <View style={styles.twoColumnRow}>
                   <View style={styles.column}>
                     <Text style={styles.label}>Tutar</Text>
+
                     <AppInput
                       value={amount}
                       onChangeText={setAmount}
@@ -359,11 +285,12 @@ export default function ExpenseTransactionModal({
 
                   <View style={styles.column}>
                     <Text style={styles.label}>Tarih</Text>
+
                     <AppDateField
                       value={selectedDateText}
                       onPress={() => {
                         setIsSelectOpen(false);
-                                            setIsDatePickerVisible(true);
+                        setIsDatePickerVisible(true);
                       }}
                     />
                   </View>
@@ -372,6 +299,7 @@ export default function ExpenseTransactionModal({
                 {isInstallment && !editTransaction ? (
                   <View style={styles.installmentBox}>
                     <Text style={styles.installmentTitle}>Taksit Bilgisi</Text>
+
                     <Text style={styles.installmentDescription}>
                       Girilen toplam tutar taksit sayısına bölünür ve her ay
                       ayrı gider olarak eklenir.
@@ -380,6 +308,7 @@ export default function ExpenseTransactionModal({
                     <View style={styles.twoColumnRow}>
                       <View style={styles.column}>
                         <Text style={styles.label}>Taksit Sayısı</Text>
+
                         <AppInput
                           value={installmentCount}
                           onChangeText={setInstallmentCount}
@@ -391,11 +320,12 @@ export default function ExpenseTransactionModal({
 
                       <View style={styles.column}>
                         <Text style={styles.label}>İlk Taksit Tarihi</Text>
+
                         <AppDateField
                           value={firstInstallmentDateText}
                           onPress={() => {
                             setIsSelectOpen(false);
-                                                    setIsInstallmentDatePickerVisible(true);
+                            setIsInstallmentDatePickerVisible(true);
                           }}
                         />
                       </View>
@@ -404,6 +334,7 @@ export default function ExpenseTransactionModal({
                 ) : null}
 
                 <Text style={styles.label}>Not</Text>
+
                 <AppInput
                   value={note}
                   onChangeText={setNote}
@@ -476,6 +407,7 @@ const styles = StyleSheet.create({
     padding: 18,
     zIndex: 10,
     elevation: 10,
+    overflow: "visible",
   },
   header: {
     flexDirection: "row",
@@ -532,6 +464,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     paddingBottom: 4,
+    overflow: "visible",
   },
   label: {
     color: "#cbd5e1",
@@ -539,80 +472,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginBottom: 6,
   },
-  selectWrapper: {
-    position: "relative",
-    zIndex: 20,
-    marginBottom: 12,
-    overflow: "visible",
-  },
-  selectRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  selectButtonWrapper: {
-    flex: 1,
-  },
-  selectButton: {
-    width: "100%",
-    minHeight: 46,
-    borderRadius: 14,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.panelBorder,
-    paddingHorizontal: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  selectButtonActive: {
-    borderColor: colors.white,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  selectText: {
-    color: colors.white,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  placeholderText: {
-    color: colors.white,
-  },
-
-  dropdown: {
-    marginTop: 6,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.65)",
-    backgroundColor: colors.panel,
-    overflow: "hidden",
-    maxHeight: 170,
-  },
-  dropdownScroll: {
-    maxHeight: 170,
-  },
-  dropdownContent: {
-    paddingVertical: 4,
-  },
-  dropdownItem: {
-    minHeight: 38,
-    paddingHorizontal: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dropdownItemActive: {
-    backgroundColor: "rgba(255, 92, 124, 0.12)",
-  },
-  dropdownIconPlaceholder: {
-    width: 18,
-    height: 18,
-  },
-  dropdownText: {
-    color: colors.white,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
   twoColumnRow: {
     flexDirection: "row",
     gap: 10,
