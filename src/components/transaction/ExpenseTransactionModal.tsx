@@ -77,6 +77,10 @@ export default function ExpenseTransactionModal({
   const selectedDateText = formatDateTR(selectedDate);
   const firstInstallmentDateText = formatDateTR(firstInstallmentDate);
 
+  const closeSelectBox = () => {
+    setIsSelectOpen(false);
+  };
+
   const resetForm = () => {
     setSelectedField("");
     setIsSelectOpen(false);
@@ -118,7 +122,7 @@ export default function ExpenseTransactionModal({
   };
 
   const handleOpenFieldsModal = () => {
-    setIsSelectOpen(false);
+    closeSelectBox();
     onOpenFieldsModal();
   };
 
@@ -263,7 +267,7 @@ export default function ExpenseTransactionModal({
                   onToggle={() => setIsSelectOpen((current) => !current)}
                   onChange={(value) => {
                     setSelectedField(value);
-                    setIsSelectOpen(false);
+                    closeSelectBox();
                   }}
                   onAddPress={handleOpenFieldsModal}
                   activeColor={colors.expense}
@@ -289,7 +293,7 @@ export default function ExpenseTransactionModal({
                     <AppDateField
                       value={selectedDateText}
                       onPress={() => {
-                        setIsSelectOpen(false);
+                        closeSelectBox();
                         setIsDatePickerVisible(true);
                       }}
                     />
@@ -324,7 +328,7 @@ export default function ExpenseTransactionModal({
                         <AppDateField
                           value={firstInstallmentDateText}
                           onPress={() => {
-                            setIsSelectOpen(false);
+                            closeSelectBox();
                             setIsInstallmentDatePickerVisible(true);
                           }}
                         />

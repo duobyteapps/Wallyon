@@ -1,5 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRef, useState } from "react";
 import {
+  Dimensions,
+  FlatList,
+  Modal,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,7 +15,7 @@ import {
 } from "react-native";
 
 import { colors } from "../../constants/theme";
-import AppIconButton from "./AppIconButton";
+import AppIconButton from "../ui/AppIconButton";
 
 type AppSelectBoxProps = {
   label?: string;
@@ -25,7 +31,13 @@ type AppSelectBoxProps = {
   containerStyle?: ViewStyle;
 };
 
-const ITEM_HEIGHT = 50;
+type DropdownLayout = {
+  top: number;
+  left: number;
+  width: number;
+};
+
+const ITEM_HEIGHT = 42;
 const MAX_VISIBLE_ITEM_COUNT = 4;
 
 export default function AppSelectBox({
@@ -41,95 +53,201 @@ export default function AppSelectBox({
   activeBackgroundColor = "rgba(255, 255, 255, 0.08)",
   containerStyle,
 }: AppSelectBoxProps) {
-  const dropdownItems = ["", ...options];
+  const selectButtonWrapperRef = useRef<View>(null);
+  const [dropdownLayout, setDropdownLayout] = useState<DropdownLayout | null>(
+    null,
+  );
 
+  const dropdownItems = ["", ...options];
   const maxDropdownHeight = ITEM_HEIGHT * MAX_VISIBLE_ITEM_COUNT;
 
+  const closeDropdown = () => {
+    setDropdownLayout(null);
+
+    if (isOpen) {
+      onToggle();
+    }
+  };
+
+  const handleToggle = () => {
+    if (Platform.OS === "ios") {
+      onToggle();
+      return;
+    }
+
+    if (isOpen) {
+      setDropdownLayout(null);
+      onToggle();
+      return;
+    }
+
+    selectButtonWrapperRef.current?.measureInWindow((x, y, width, height) => {
+      const screenHeight = Dimensions.get("window").height;
+      const dropdownHeight = Math.min(
+        dropdownItems.length * ITEM_HEIGHT,
+        maxDropdownHeight,
+      );
+
+      const dropdownTop =
+        y + height + 6 + dropdownHeight > screenHeight - 16
+          ? Math.max(16, y - dropdownHeight - 6)
+          : y + height + 6;
+
+      setDropdownLayout({
+        top: dropdownTop,
+        left: x,
+        width,
+      });
+
+      onToggle();
+    });
+  };
+
   const handleSelect = (selectedValue: string) => {
+    setDropdownLayout(null);
     onChange(selectedValue);
   };
 
+  const renderDropdownItem = ({
+    item,
+    index,
+  }: {
+    item: string;
+    index: number;
+  }) => {
+    const isPlaceholder = item === "";
+    const isSelected = value === item;
+
+    return (
+      <TouchableOpacity
+        key={`${item || "empty"}-${index}`}
+        activeOpacity={0.85}
+        style={[
+          styles.dropdownItem,
+          isSelected && { backgroundColor: activeBackgroundColor },
+        ]}
+        onPress={() => handleSelect(item)}
+      >
+        {!isPlaceholder && isSelected ? (
+          <Ionicons name="checkmark-circle" size={18} color={activeColor} />
+        ) : (
+          <View style={styles.dropdownIconPlaceholder} />
+        )}
+
+        <Text style={styles.dropdownText} numberOfLines={1}>
+          {isPlaceholder ? placeholder : item}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderIosDropdownItems = () => (
+    <ScrollView
+      nestedScrollEnabled
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={
+        dropdownItems.length > MAX_VISIBLE_ITEM_COUNT
+      }
+      style={[styles.dropdownScroll, { maxHeight: maxDropdownHeight }]}
+      contentContainerStyle={styles.dropdownContent}
+    >
+      {dropdownItems.map((item, index) => renderDropdownItem({ item, index }))}
+    </ScrollView>
+  );
+
+  const renderAndroidDropdownItems = () => (
+    <FlatList
+      data={dropdownItems}
+      keyExtractor={(item, index) => `${item || "empty"}-${index}`}
+      renderItem={renderDropdownItem}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled
+      scrollEnabled
+      bounces={false}
+      overScrollMode="always"
+      showsVerticalScrollIndicator={
+        dropdownItems.length > MAX_VISIBLE_ITEM_COUNT
+      }
+      style={[styles.dropdownScroll, { maxHeight: maxDropdownHeight }]}
+      contentContainerStyle={styles.dropdownContent}
+      getItemLayout={(_, index) => ({
+        length: ITEM_HEIGHT,
+        offset: ITEM_HEIGHT * index,
+        index,
+      })}
+    />
+  );
+
   return (
-    <View style={[styles.container, containerStyle]}>
-      <Text style={styles.label}>{label}</Text>
+    <>
+      <View style={[styles.container, containerStyle]}>
+        {label ? <Text style={styles.label}>{label}</Text> : null}
 
-      <View style={styles.selectRow}>
-        <View style={styles.selectButtonWrapper}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={[styles.selectButton, isOpen && styles.selectButtonActive]}
-            onPress={onToggle}
+        <View style={styles.selectRow}>
+          <View
+            ref={selectButtonWrapperRef}
+            collapsable={false}
+            style={styles.selectButtonWrapper}
           >
-            <Text
-              style={[styles.selectText, !value && styles.placeholderText]}
-              numberOfLines={1}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[styles.selectButton, isOpen && styles.selectButtonActive]}
+              onPress={handleToggle}
             >
-              {value || placeholder}
-            </Text>
-
-            <Ionicons
-              name={isOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.white}
-            />
-          </TouchableOpacity>
-
-          {isOpen ? (
-            <View style={[styles.dropdown, { maxHeight: maxDropdownHeight }]}>
-              <ScrollView
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={dropdownItems.length > 3}
-                style={styles.dropdownScroll}
-                contentContainerStyle={styles.dropdownContent}
+              <Text
+                style={[styles.selectText, !value && styles.placeholderText]}
+                numberOfLines={1}
               >
-                {dropdownItems.map((item, index) => {
-                  const isPlaceholder = item === "";
-                  const isSelected = value === item;
+                {value || placeholder}
+              </Text>
 
-                  return (
-                    <TouchableOpacity
-                      key={`${item || "empty"}-${index}`}
-                      activeOpacity={0.85}
-                      style={[
-                        styles.dropdownItem,
-                        isSelected && {
-                          backgroundColor: activeBackgroundColor,
-                        },
-                      ]}
-                      onPress={() => handleSelect(item)}
-                    >
-                      {!isPlaceholder && isSelected ? (
-                        <Ionicons
-                          name="checkmark"
-                          size={18}
-                          color={activeColor}
-                        />
-                      ) : (
-                        <View style={styles.dropdownIconPlaceholder} />
-                      )}
+              <Ionicons
+                name={isOpen ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={colors.white}
+              />
+            </TouchableOpacity>
 
-                      <Text style={styles.dropdownText} numberOfLines={1}>
-                        {isPlaceholder ? placeholder : item}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+            {isOpen && Platform.OS === "ios" ? (
+              <View style={styles.iosDropdown}>{renderIosDropdownItems()}</View>
+            ) : null}
+          </View>
+
+          {onAddPress ? (
+            <AppIconButton icon="add" onPress={onAddPress} />
+          ) : null}
+        </View>
+      </View>
+
+      <Modal
+        visible={isOpen && Platform.OS === "android" && !!dropdownLayout}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={closeDropdown}
+      >
+        <View style={styles.dropdownModalRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeDropdown} />
+
+          {dropdownLayout ? (
+            <View
+              style={[
+                styles.androidDropdown,
+                {
+                  top: dropdownLayout.top,
+                  left: dropdownLayout.left,
+                  width: dropdownLayout.width,
+                  maxHeight: maxDropdownHeight,
+                },
+              ]}
+              onStartShouldSetResponder={() => true}
+            >
+              {renderAndroidDropdownItems()}
             </View>
           ) : null}
         </View>
-
-        {onAddPress ? (
-          <AppIconButton
-            icon="add"
-            onPress={onAddPress}
-            size={46}
-            iconSize={22}
-          />
-        ) : null}
-      </View>
-    </View>
+      </Modal>
+    </>
   );
 }
 
@@ -189,7 +307,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: colors.white,
   },
-  dropdown: {
+  iosDropdown: {
     position: "absolute",
     top: 52,
     left: 0,
@@ -202,14 +320,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     overflow: "hidden",
   },
+  dropdownModalRoot: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  androidDropdown: {
+    position: "absolute",
+    zIndex: 20000,
+    elevation: 20000,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.65)",
+    backgroundColor: colors.panel,
+    overflow: "hidden",
+  },
   dropdownScroll: {
     width: "100%",
   },
   dropdownContent: {
-    paddingVertical: 0,
+    paddingVertical: 4,
   },
   dropdownItem: {
-    minHeight: ITEM_HEIGHT,
+    height: ITEM_HEIGHT,
     paddingHorizontal: 13,
     flexDirection: "row",
     alignItems: "center",

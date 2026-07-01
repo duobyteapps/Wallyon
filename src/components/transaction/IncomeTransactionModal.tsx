@@ -69,6 +69,10 @@ export default function IncomeTransactionModal({
 
   const selectedDateText = formatDateTR(selectedDate);
 
+  const closeSelectBox = () => {
+    setIsSelectOpen(false);
+  };
+
   const resetForm = () => {
     setSelectedField("");
     setIsSelectOpen(false);
@@ -100,7 +104,7 @@ export default function IncomeTransactionModal({
   };
 
   const handleOpenFieldsModal = () => {
-    setIsSelectOpen(false);
+    closeSelectBox();
     onOpenFieldsModal();
   };
 
@@ -177,7 +181,7 @@ export default function IncomeTransactionModal({
                   onToggle={() => setIsSelectOpen((current) => !current)}
                   onChange={(value) => {
                     setSelectedField(value);
-                    setIsSelectOpen(false);
+                    closeSelectBox();
                   }}
                   onAddPress={handleOpenFieldsModal}
                   activeColor={colors.income}
@@ -203,7 +207,7 @@ export default function IncomeTransactionModal({
                     <AppDateField
                       value={selectedDateText}
                       onPress={() => {
-                        setIsSelectOpen(false);
+                        closeSelectBox();
                         setIsDatePickerVisible(true);
                       }}
                     />
