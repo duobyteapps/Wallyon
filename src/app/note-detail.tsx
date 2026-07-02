@@ -1,158 +1,433 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AppButton from "../components/ui/AppButton";
+import AppDateField from "../components/ui/AppDateField";
+import AppDatePickerModal from "../components/ui/AppDatePickerModal";
 import AppIconButton from "../components/ui/AppIconButton";
 import { colors } from "../constants/theme";
-import { getStoredNotes } from "../services/noteStorage";
-import { Note } from "../types/note";
-import { formatNoteDate } from "../utils/noteUtils";
+import { getStoredNotes, saveStoredNotes } from "../services/noteStorage";
+import { Note, NoteChecklistItem, NoteContentType } from "../types/note";
+import { formatDateTR } from "../utils/dateUtils";
 
-export default function NoteDetailScreen() {
-  const params = useLocalSearchParams<{ noteId?: string }>();
+const formatStorageDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-  const [note, setNote] = useState<Note | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  return `${year}-${month}-${day}`;
+};
 
-  const noteId = useMemo(() => {
-    if (!params.noteId) return null;
+const parseStorageDate = (date: string) => {
+  const [year, month, day] = date.split("-").map(Number);
 
-    const parsedId = Number(params.noteId);
-    return Number.isNaN(parsedId) ? null : parsedId;
-  }, [params.noteId]);
+  if (!year || !month || !day) {
+    return new Date();
+  }
 
-  useFocusEffect(
-    useCallback(() => {
-      const loadNote = async () => {
-        if (!noteId) {
-          setNote(null);
-          setIsLoading(false);
+  return new Date(year, month - 1, day);
+};
+
+const createEmptyChecklistItem = (): NoteChecklistItem => ({
+  id: Date.now() + Math.random(),
+  text: "",
+  isCompleted: false,
+});
+
+export default function AddNoteScreen() {
+  const { noteId } = useLocalSearchParams<{ noteId?: string }>();
+
+  const isEditing = useMemo(() => {
+    return !!noteId;
+  }, [noteId]);
+
+  const checklistInputRefs = useRef<Record<number, TextInput | null>>({});
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [contentType, setContentType] = useState<NoteContentType>("text");
+  const [checklistItems, setChecklistItems] = useState<NoteChecklistItem[]>([
+    createEmptyChecklistItem(),
+  ]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+
+  useEffect(() => {
+    if (!noteId) return;
+
+    const loadEditingNote = async () => {
+      try {
+        const notes = await getStoredNotes();
+
+        const editingNote = notes.find(
+          (note) => String(note.id) === String(noteId),
+        );
+
+        if (!editingNote) {
+          Alert.alert("Hata", "Düzenlenecek not bulunamadı.");
+          router.back();
           return;
         }
 
-        try {
-          setIsLoading(true);
+        const editingContentType: NoteContentType =
+          editingNote.contentType === "checklist" ? "checklist" : "text";
 
-          const storedNotes = await getStoredNotes();
+        setTitle(editingNote.title);
+        setDescription(editingNote.description || "");
+        setContentType(editingContentType);
+        setChecklistItems(
+          editingNote.checklistItems && editingNote.checklistItems.length > 0
+            ? editingNote.checklistItems
+            : [createEmptyChecklistItem()],
+        );
+        setSelectedDate(parseStorageDate(editingNote.date));
+      } catch {
+        Alert.alert("Hata", "Not bilgileri yüklenirken bir sorun oluştu.");
+      }
+    };
 
-          const selectedNote = storedNotes.find(
-            (storedNote) => Number(storedNote.id) === noteId,
-          );
+    loadEditingNote();
+  }, [noteId]);
 
-          setNote(selectedNote ?? null);
-        } catch {
-          Alert.alert("Hata", "Not detayı yüklenirken bir sorun oluştu.");
-        } finally {
-          setIsLoading(false);
-        }
+  const selectContentType = (nextType: NoteContentType) => {
+    setContentType(nextType);
+
+    if (nextType === "checklist" && checklistItems.length === 0) {
+      setChecklistItems([createEmptyChecklistItem()]);
+    }
+  };
+
+  const updateChecklistItemText = (itemId: number, text: string) => {
+    setChecklistItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              text,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const toggleChecklistItem = (itemId: number) => {
+    setChecklistItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              isCompleted: !item.isCompleted,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const removeChecklistItem = (itemId: number) => {
+    setChecklistItems((currentItems) => {
+      if (currentItems.length === 1) {
+        return [createEmptyChecklistItem()];
+      }
+
+      return currentItems.filter((item) => item.id !== itemId);
+    });
+
+    delete checklistInputRefs.current[itemId];
+  };
+
+  const focusChecklistItem = (itemId: number) => {
+    setTimeout(() => {
+      checklistInputRefs.current[itemId]?.focus();
+    }, 80);
+  };
+
+  const handleChecklistSubmit = (itemId: number) => {
+    const currentIndex = checklistItems.findIndex((item) => item.id === itemId);
+
+    if (currentIndex === -1) return;
+
+    const currentItem = checklistItems[currentIndex];
+
+    if (!currentItem.text.trim()) return;
+
+    const nextExistingItem = checklistItems[currentIndex + 1];
+
+    if (nextExistingItem) {
+      focusChecklistItem(nextExistingItem.id);
+      return;
+    }
+
+    const nextItem = createEmptyChecklistItem();
+
+    setChecklistItems((currentItems) => [...currentItems, nextItem]);
+    focusChecklistItem(nextItem.id);
+  };
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      Alert.alert("Uyarı", "Not başlığı boş olamaz.");
+      return;
+    }
+
+    const normalizedChecklistItems = checklistItems
+      .map((item) => ({
+        ...item,
+        text: item.text.trim(),
+      }))
+      .filter((item) => item.text.length > 0);
+
+    if (contentType === "checklist" && normalizedChecklistItems.length === 0) {
+      Alert.alert("Uyarı", "Liste için en az bir madde eklemelisin.");
+      return;
+    }
+
+    const nextDescription = contentType === "text" ? description.trim() : "";
+
+    const nextChecklistItems =
+      contentType === "checklist" ? normalizedChecklistItems : undefined;
+
+    const nextIsCompleted =
+      contentType === "checklist"
+        ? normalizedChecklistItems.length > 0 &&
+          normalizedChecklistItems.every((item) => item.isCompleted)
+        : false;
+
+    try {
+      const notes = await getStoredNotes();
+
+      if (isEditing && noteId) {
+        const updatedNotes = notes.map((note) =>
+          String(note.id) === String(noteId)
+            ? {
+                ...note,
+                title: title.trim(),
+                description: nextDescription,
+                contentType,
+                checklistItems: nextChecklistItems,
+                date: formatStorageDate(selectedDate),
+                isCompleted:
+                  contentType === "checklist"
+                    ? nextIsCompleted
+                    : note.isCompleted,
+              }
+            : note,
+        );
+
+        await saveStoredNotes(updatedNotes);
+        router.back();
+        return;
+      }
+
+      const newNote: Note = {
+        id: Date.now(),
+        title: title.trim(),
+        description: nextDescription,
+        contentType,
+        checklistItems: nextChecklistItems,
+        date: formatStorageDate(selectedDate),
+        isCompleted: nextIsCompleted,
+        createdAt: new Date().toISOString(),
       };
 
-      loadNote();
-    }, [noteId]),
-  );
-
-  const isChecklistNote =
-    note?.contentType === "checklist" &&
-    !!note.checklistItems &&
-    note.checklistItems.length > 0;
+      await saveStoredNotes([newNote, ...notes]);
+      router.back();
+    } catch {
+      Alert.alert(
+        "Hata",
+        isEditing
+          ? "Not güncellenirken bir sorun oluştu."
+          : "Not kaydedilirken bir sorun oluştu.",
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.header}>
-          <AppIconButton
-            icon="chevron-back"
-            onPress={() => router.back()}
-            size={43}
-            iconSize={21}
-            iconColor={colors.white}
-            backgroundColor={colors.panel}
-            borderColor={colors.panelBorder}
-            style={styles.backButton}
-          />
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <View style={styles.headerTop}>
+              <AppIconButton
+                icon="chevron-back"
+                onPress={() => router.back()}
+                size={43}
+                iconSize={21}
+                iconColor={colors.white}
+                backgroundColor={colors.panel}
+                borderColor={colors.panelBorder}
+                style={styles.backButton}
+              />
 
-          <View style={styles.headerTextWrapper}>
-            <Text style={styles.title}>Not Detayı</Text>
-            <Text style={styles.description}>
-              Not içeriğini buradan görüntüleyebilirsin.
-            </Text>
-          </View>
-        </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>
+                  {isEditing ? "Notu Düzenle" : "Yeni Not"}
+                </Text>
 
-        {isLoading ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="hourglass-outline" size={34} color={colors.muted} />
-            <Text style={styles.emptyTitle}>Not yükleniyor</Text>
-            <Text style={styles.emptyText}>Not bilgileri hazırlanıyor.</Text>
+                <Text style={styles.description}>
+                  {isEditing
+                    ? "Not başlığını, tipini, içeriğini veya tarihini güncelle."
+                    : "Önce not tipini seç, sonra notunu oluştur."}
+                </Text>
+              </View>
+            </View>
           </View>
-        ) : !note ? (
-          <View style={styles.emptyCard}>
-            <Ionicons
-              name="document-text-outline"
-              size={38}
-              color={colors.muted}
-            />
-            <Text style={styles.emptyTitle}>Not bulunamadı</Text>
-            <Text style={styles.emptyText}>
-              Bu not silinmiş olabilir veya geçersiz bir not açılmış olabilir.
-            </Text>
-          </View>
-        ) : (
-          <>
-            <View style={styles.statusCard}>
-              <View style={styles.statusIcon}>
+
+          <View style={styles.noteTypeCard}>
+            <View style={styles.noteTypeHeader}>
+              <View style={styles.infoIcon}>
                 <Ionicons
-                  name={note.isCompleted ? "checkmark-done" : "time-outline"}
-                  size={23}
-                  color={note.isCompleted ? colors.income : colors.purpleLight}
+                  name="information-circle-outline"
+                  size={22}
+                  color={colors.purpleLight}
                 />
               </View>
 
-              <View style={styles.statusContent}>
-                <Text style={styles.statusTitle}>
-                  {note.isCompleted ? "Tamamlandı" : "Devam Ediyor"}
-                </Text>
-
-                <Text style={styles.statusDate}>
-                  {formatNoteDate(note.date)}
+              <View style={styles.infoContent}>
+                <Text style={styles.infoTitle}>Not Tipi</Text>
+                <Text style={styles.infoText}>
+                  Açıklama veya liste olarak not oluşturabilirsin.
                 </Text>
               </View>
             </View>
 
-            <View style={styles.detailCard}>
-              <View style={styles.noteHeader}>
-                <View style={styles.noteIcon}>
+            <View style={styles.contentTypeRow}>
+              <TouchableOpacity
+                activeOpacity={0.84}
+                onPress={() => selectContentType("text")}
+                style={[
+                  styles.contentTypeButton,
+                  contentType === "text" && styles.contentTypeButtonActive,
+                ]}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={18}
+                  color={
+                    contentType === "text" ? colors.purple : colors.mutedLight
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.contentTypeText,
+                    contentType === "text" && styles.contentTypeTextActive,
+                  ]}
+                >
+                  Açıklama
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.84}
+                onPress={() => selectContentType("checklist")}
+                style={[
+                  styles.contentTypeButton,
+                  contentType === "checklist" && styles.contentTypeButtonActive,
+                ]}
+              >
+                <Ionicons
+                  name="checkbox-outline"
+                  size={18}
+                  color={
+                    contentType === "checklist"
+                      ? colors.purple
+                      : colors.mutedLight
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.contentTypeText,
+                    contentType === "checklist" && styles.contentTypeTextActive,
+                  ]}
+                >
+                  Liste
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Not Başlığı</Text>
+
+              <View style={styles.inputBox}>
+                <Ionicons
+                  name="sparkles-outline"
+                  size={21}
+                  color={colors.muted}
+                  style={styles.inputIcon}
+                />
+
+                <TextInput
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="Başlık yaz"
+                  placeholderTextColor={colors.mutedLight}
+                  style={styles.textInput}
+                />
+              </View>
+            </View>
+
+            {contentType === "text" ? (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Açıklama</Text>
+
+                <View style={styles.descriptionBox}>
                   <Ionicons
                     name="document-text-outline"
-                    size={23}
-                    color={colors.purpleLight}
+                    size={21}
+                    color={colors.muted}
+                    style={styles.descriptionIcon}
+                  />
+
+                  <TextInput
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="Notunu yaz"
+                    placeholderTextColor={colors.mutedLight}
+                    style={styles.descriptionInput}
+                    multiline
+                    textAlignVertical="top"
                   />
                 </View>
-
-                <View style={styles.noteTitleWrapper}>
-                  <Text style={styles.label}>Not Başlığı</Text>
-                  <Text style={styles.noteTitle}>{note.title}</Text>
-                </View>
               </View>
+            ) : null}
 
-              <View style={styles.divider} />
+            {contentType === "checklist" ? (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Liste</Text>
 
-              {isChecklistNote ? (
-                <View>
-                  <Text style={styles.sectionTitle}>Kontrol Listesi</Text>
-
-                  {note.checklistItems!.map((item) => (
-                    <View key={item.id} style={styles.checklistItem}>
-                      <View
+                <View style={styles.checklistBox}>
+                  {checklistItems.map((item, index) => (
+                    <View key={item.id} style={styles.checklistRow}>
+                      <TouchableOpacity
+                        activeOpacity={0.82}
+                        onPress={() => toggleChecklistItem(item.id)}
                         style={[
-                          styles.checklistBox,
-                          item.isCompleted && styles.checklistBoxCompleted,
+                          styles.checklistCheckbox,
+                          item.isCompleted && styles.checklistCheckboxActive,
                         ]}
                       >
                         {item.isCompleted ? (
@@ -162,47 +437,80 @@ export default function NoteDetailScreen() {
                             color={colors.background}
                           />
                         ) : null}
-                      </View>
+                      </TouchableOpacity>
 
-                      <Text
+                      <TextInput
+                        ref={(input) => {
+                          checklistInputRefs.current[item.id] = input;
+                        }}
+                        value={item.text}
+                        onChangeText={(text) =>
+                          updateChecklistItemText(item.id, text)
+                        }
+                        placeholder={index === 0 ? "Liste yaz" : ""}
+                        placeholderTextColor={colors.mutedLight}
                         style={[
-                          styles.checklistText,
-                          item.isCompleted && styles.checklistTextCompleted,
+                          styles.checklistInput,
+                          item.isCompleted && styles.checklistInputCompleted,
                         ]}
-                      >
-                        {item.text}
-                      </Text>
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => handleChecklistSubmit(item.id)}
+                      />
+
+                      {checklistItems.length > 1 ? (
+                        <TouchableOpacity
+                          activeOpacity={0.82}
+                          onPress={() => removeChecklistItem(item.id)}
+                          style={styles.removeChecklistButton}
+                        >
+                          <Ionicons
+                            name="close"
+                            size={18}
+                            color={colors.muted}
+                          />
+                        </TouchableOpacity>
+                      ) : null}
                     </View>
                   ))}
                 </View>
-              ) : (
-                <View>
-                  <Text style={styles.sectionTitle}>Açıklama</Text>
 
-                  <Text style={styles.noteDescription}>
-                    {note.description?.trim()
-                      ? note.description
-                      : "Bu not için açıklama eklenmemiş."}
-                  </Text>
-                </View>
-              )}
-            </View>
+                <Text style={styles.helperText}>
+                  Klavyedeki ileri tuşuna bastığında yeni checkbox oluşur ve
+                  imleç alt satıra geçer.
+                </Text>
+              </View>
+            ) : null}
 
-            <View style={styles.infoCard}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={colors.purpleLight}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tarih</Text>
+
+              <AppDateField
+                value={formatDateTR(selectedDate)}
+                onPress={() => setIsDatePickerVisible(true)}
+                marginBottom={0}
               />
 
-              <Text style={styles.infoText}>
-                Bu ekran sadece görüntüleme içindir. Notu değiştirmek için kalem
-                ikonunu kullanabilirsin.
+              <Text style={styles.helperText}>
+                Tarih alanına tıklayarak notun gösterileceği günü seç.
               </Text>
             </View>
-          </>
-        )}
-      </ScrollView>
+
+            <AppButton
+              title={isEditing ? "Değişiklikleri Kaydet" : "Notu Kaydet"}
+              onPress={handleSave}
+              style={styles.saveButton}
+            />
+          </View>
+        </ScrollView>
+
+        <AppDatePickerModal
+          visible={isDatePickerVisible}
+          value={selectedDate}
+          onClose={() => setIsDatePickerVisible(false)}
+          onConfirm={setSelectedDate}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -211,6 +519,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   container: {
     flex: 1,
@@ -222,19 +533,18 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 12,
+  },
+  headerTop: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 14,
   },
   backButton: {
-    marginRight: 14,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 7 },
     elevation: 4,
-  },
-  headerTextWrapper: {
-    flex: 1,
   },
   title: {
     color: colors.white,
@@ -243,27 +553,29 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   description: {
-    marginTop: 6,
+    marginTop: 12,
     color: colors.muted,
     fontSize: 12,
     lineHeight: 18,
     fontWeight: "600",
   },
-  statusCard: {
-    marginTop: 26,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+  noteTypeCard: {
+    marginTop: 24,
+    padding: 16,
     borderRadius: 26,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
+  },
+  noteTypeHeader: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 14,
   },
-  statusIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 17,
+  infoIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 16,
     backgroundColor: colors.purpleSoft,
     borderWidth: 1,
     borderColor: colors.purpleBorder,
@@ -271,22 +583,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
-  statusContent: {
+  infoContent: {
     flex: 1,
+    minWidth: 0,
+    justifyContent: "center",
   },
-  statusTitle: {
+  infoTitle: {
     color: colors.white,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "900",
   },
-  statusDate: {
+  infoText: {
     marginTop: 4,
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700",
+    lineHeight: 17,
+    fontWeight: "600",
   },
-  detailCard: {
-    marginTop: 18,
+  card: {
+    marginTop: 20,
     padding: 20,
     borderRadius: 34,
     backgroundColor: colors.panel,
@@ -298,131 +613,152 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
   },
-  noteHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  noteIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    backgroundColor: colors.purpleSoft,
-    borderWidth: 1,
-    borderColor: colors.purpleBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  noteTitleWrapper: {
-    flex: 1,
+  inputGroup: {
+    marginBottom: 14,
   },
   label: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  noteTitle: {
-    marginTop: 5,
+    marginBottom: 7,
     color: colors.white,
-    fontSize: 22,
-    lineHeight: 29,
-    fontWeight: "900",
-    letterSpacing: -0.4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.panelBorder,
-    marginVertical: 20,
-  },
-  sectionTitle: {
-    marginBottom: 10,
-    color: colors.white,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "900",
   },
-  noteDescription: {
-    color: colors.mutedLight,
-    fontSize: 14,
-    lineHeight: 23,
-    fontWeight: "600",
-  },
-  checklistItem: {
-    marginTop: 9,
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-    borderRadius: 18,
-    backgroundColor: colors.background,
+  inputBox: {
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 18,
   },
-  checklistBox: {
-    width: 25,
-    height: 25,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: colors.purpleBorder,
-    backgroundColor: colors.purpleSoft,
-    alignItems: "center",
-    justifyContent: "center",
+  inputIcon: {
     marginRight: 10,
   },
-  checklistBoxCompleted: {
-    backgroundColor: colors.income,
-    borderColor: colors.incomeBorder,
-  },
-  checklistText: {
+  textInput: {
     flex: 1,
-    color: colors.mutedLight,
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: "700",
+    height: "100%",
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: "800",
+    paddingVertical: 0,
   },
-  checklistTextCompleted: {
-    color: colors.muted,
-    textDecorationLine: "line-through",
-  },
-  infoCard: {
-    marginTop: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    borderRadius: 24,
-    backgroundColor: colors.purpleSoft,
+  descriptionBox: {
+    minHeight: 150,
+    borderRadius: 22,
+    backgroundColor: colors.panel,
     borderWidth: 1,
-    borderColor: colors.purpleBorder,
+    borderColor: colors.panelBorder,
     flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    alignItems: "flex-start",
+    paddingHorizontal: 18,
+    paddingVertical: 18,
   },
-  infoText: {
+  descriptionIcon: {
+    marginRight: 10,
+    marginTop: 1,
+  },
+  descriptionInput: {
     flex: 1,
-    color: colors.mutedLight,
+    minHeight: 105,
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: "800",
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingVertical: 0,
+    textAlignVertical: "top",
+  },
+  helperText: {
+    marginTop: 8,
+    color: colors.muted,
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
-  emptyCard: {
-    marginTop: 34,
-    padding: 22,
-    borderRadius: 30,
+  contentTypeRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  contentTypeButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 17,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 7,
   },
-  emptyTitle: {
-    marginTop: 12,
-    color: colors.white,
-    fontSize: 17,
+  contentTypeButtonActive: {
+    backgroundColor: colors.purpleSoft,
+    borderColor: colors.purpleBorder,
+  },
+  contentTypeText: {
+    color: colors.mutedLight,
+    fontSize: 12,
     fontWeight: "900",
   },
-  emptyText: {
-    marginTop: 6,
+  contentTypeTextActive: {
+    color: colors.purple,
+  },
+  checklistBox: {
+    minHeight: 150,
+    borderRadius: 22,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.panelBorder,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  checklistRow: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checklistCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.purpleBorder,
+    backgroundColor: colors.purpleSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 9,
+  },
+  checklistCheckboxActive: {
+    backgroundColor: colors.purple,
+    borderColor: colors.purpleBorder,
+  },
+  checklistInput: {
+    flex: 1,
+    minHeight: 36,
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: "800",
+    paddingVertical: 0,
+  },
+  checklistInputCompleted: {
     color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: "600",
-    textAlign: "center",
+    textDecorationLine: "line-through",
+  },
+  removeChecklistButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 6,
+  },
+  saveButton: {
+    borderRadius: 21,
+    shadowColor: colors.purple,
+    shadowOpacity: 0.42,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 9 },
+    elevation: 8,
   },
 });
