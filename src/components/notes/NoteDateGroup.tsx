@@ -10,11 +10,11 @@ type NoteDateGroupProps = {
   group: NoteGroup;
   isExpanded: boolean;
   onToggleGroup: (date: string) => void;
-  onToggleNote: (noteId: number) => void;
+  onToggleNote?: (noteId: number) => void;
   onViewNote?: (noteId: number) => void;
   onEditNote: (noteId: number) => void;
   onDeleteNote: (noteId: number) => void;
-  onToggleChecklistItem: (noteId: number, itemId: number) => void;
+  onToggleChecklistItem?: (noteId: number, itemId: number) => void;
 };
 
 export default function NoteDateGroup({
@@ -27,6 +27,18 @@ export default function NoteDateGroup({
   onDeleteNote,
   onToggleChecklistItem,
 }: NoteDateGroupProps) {
+  const handleToggleNote = (noteId: number) => {
+    if (!onToggleNote) return;
+
+    onToggleNote(noteId);
+  };
+
+  const handleToggleChecklistItem = (noteId: number, itemId: number) => {
+    if (!onToggleChecklistItem) return;
+
+    onToggleChecklistItem(noteId, itemId);
+  };
+
   return (
     <View style={styles.dateGroup}>
       <TouchableOpacity
@@ -49,6 +61,7 @@ export default function NoteDateGroup({
           <Text style={styles.dateGroupTitle}>
             {formatNoteDate(group.date)}
           </Text>
+
           <Text style={styles.dateGroupDescription}>
             {group.notes.length} not planlandı
           </Text>
@@ -72,11 +85,11 @@ export default function NoteDateGroup({
               key={note.id}
               note={note}
               type="future"
-              onToggle={onToggleNote}
+              onToggle={handleToggleNote}
               onView={onViewNote}
               onEdit={onEditNote}
               onDelete={onDeleteNote}
-              onToggleChecklistItem={onToggleChecklistItem}
+              onToggleChecklistItem={handleToggleChecklistItem}
             />
           ))}
         </View>
@@ -89,6 +102,7 @@ const styles = StyleSheet.create({
   dateGroup: {
     marginBottom: 13,
   },
+
   dateGroupHeader: {
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -99,10 +113,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+
   dateGroupHeaderActive: {
     borderColor: colors.purpleBorder,
     backgroundColor: colors.purpleSoft,
   },
+
   dateGroupIcon: {
     width: 34,
     height: 34,
@@ -114,25 +130,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 10,
   },
+
   dateGroupTextWrapper: {
     flex: 1,
   },
+
   dateGroupTitle: {
     color: colors.white,
     fontSize: 13,
     fontWeight: "900",
   },
+
   dateGroupDescription: {
     marginTop: 3,
     color: colors.muted,
     fontSize: 11,
     fontWeight: "700",
   },
+
   dateGroupRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+
   dateGroupCount: {
     minWidth: 26,
     height: 24,
@@ -144,6 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
   },
+
   dateGroupContent: {
     marginTop: 10,
   },

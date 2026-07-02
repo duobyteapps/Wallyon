@@ -65,6 +65,17 @@ export default function AddNoteScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
+  const hasDescriptionContent = description.trim().length > 0;
+
+  const hasChecklistContent = checklistItems.some(
+    (item) => item.text.trim().length > 0,
+  );
+
+  const isTextTypeDisabled = contentType !== "text" && hasChecklistContent;
+
+  const isChecklistTypeDisabled =
+    contentType !== "checklist" && hasDescriptionContent;
+
   useEffect(() => {
     if (!noteId) return;
 
@@ -103,6 +114,14 @@ export default function AddNoteScreen() {
   }, [noteId]);
 
   const selectContentType = (nextType: NoteContentType) => {
+    if (nextType === "text" && hasChecklistContent) {
+      return;
+    }
+
+    if (nextType === "checklist" && hasDescriptionContent) {
+      return;
+    }
+
     setContentType(nextType);
 
     if (nextType === "checklist" && checklistItems.length === 0) {
@@ -295,17 +314,23 @@ export default function AddNoteScreen() {
             <View style={styles.contentTypeRow}>
               <TouchableOpacity
                 activeOpacity={0.85}
+                disabled={isTextTypeDisabled}
                 onPress={() => selectContentType("text")}
                 style={[
                   styles.contentTypeButton,
                   contentType === "text" && styles.contentTypeButtonActive,
+                  isTextTypeDisabled && styles.contentTypeButtonDisabled,
                 ]}
               >
                 <Ionicons
                   name="document-text-outline"
                   size={18}
                   color={
-                    contentType === "text" ? colors.purple : colors.mutedLight
+                    isTextTypeDisabled
+                      ? colors.muted
+                      : contentType === "text"
+                        ? colors.purple
+                        : colors.mutedLight
                   }
                 />
 
@@ -313,6 +338,7 @@ export default function AddNoteScreen() {
                   style={[
                     styles.contentTypeText,
                     contentType === "text" && styles.contentTypeTextActive,
+                    isTextTypeDisabled && styles.contentTypeTextDisabled,
                   ]}
                 >
                   Açıklama
@@ -321,19 +347,23 @@ export default function AddNoteScreen() {
 
               <TouchableOpacity
                 activeOpacity={0.85}
+                disabled={isChecklistTypeDisabled}
                 onPress={() => selectContentType("checklist")}
                 style={[
                   styles.contentTypeButton,
                   contentType === "checklist" && styles.contentTypeButtonActive,
+                  isChecklistTypeDisabled && styles.contentTypeButtonDisabled,
                 ]}
               >
                 <Ionicons
                   name="checkbox-outline"
                   size={18}
                   color={
-                    contentType === "checklist"
-                      ? colors.purple
-                      : colors.mutedLight
+                    isChecklistTypeDisabled
+                      ? colors.muted
+                      : contentType === "checklist"
+                        ? colors.purple
+                        : colors.mutedLight
                   }
                 />
 
@@ -341,6 +371,7 @@ export default function AddNoteScreen() {
                   style={[
                     styles.contentTypeText,
                     contentType === "checklist" && styles.contentTypeTextActive,
+                    isChecklistTypeDisabled && styles.contentTypeTextDisabled,
                   ]}
                 >
                   Liste
@@ -452,11 +483,6 @@ export default function AddNoteScreen() {
                     </View>
                   ))}
                 </View>
-
-                <Text style={styles.helperText}>
-                  Klavyedeki ileri tuşuna bastığında yeni checkbox oluşur ve
-                  imleç alt satıra geçer.
-                </Text>
               </View>
             )}
 
@@ -671,6 +697,12 @@ const styles = StyleSheet.create({
     borderColor: colors.purpleBorder,
   },
 
+  contentTypeButtonDisabled: {
+    opacity: 0.42,
+    backgroundColor: colors.background,
+    borderColor: colors.panelBorder,
+  },
+
   contentTypeText: {
     color: colors.mutedLight,
     fontSize: 12,
@@ -679,6 +711,10 @@ const styles = StyleSheet.create({
 
   contentTypeTextActive: {
     color: colors.purple,
+  },
+
+  contentTypeTextDisabled: {
+    color: colors.muted,
   },
 
   checklistBox: {

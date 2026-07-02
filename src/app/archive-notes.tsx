@@ -149,7 +149,7 @@ export default function ArchiveNotesScreen() {
                 group={group}
                 isExpanded={!!expandedGroups[group.date]}
                 onToggleGroup={toggleArchiveGroup}
-                onPressNote={openNoteDetail}
+                onViewNote={openNoteDetail}
                 onEditNote={editNote}
                 onDeleteNote={deleteNote}
               />
