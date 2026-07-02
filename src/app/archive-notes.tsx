@@ -1,7 +1,8 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import ArchiveHeader from "../components/archive/ArchiveHeader";
 import ArchiveSummaryCard from "../components/archive/ArchiveSummaryCard";
 import NoteDateGroup from "../components/notes/NoteDateGroup";
@@ -10,9 +11,9 @@ import { colors } from "../constants/theme";
 import { getStoredNotes, saveStoredNotes } from "../services/noteStorage";
 import { Note } from "../types/note";
 import {
-    getArchiveMonthlyData,
-    getArchivedNotes,
-    getFilteredArchivedNotes,
+  getArchiveMonthlyData,
+  getArchivedNotes,
+  getFilteredArchivedNotes,
 } from "../utils/archiveNoteHelpers";
 import { groupNotesByDate } from "../utils/noteUtils";
 
@@ -56,6 +57,24 @@ export default function ArchiveNotesScreen() {
     );
   }, [filteredArchivedNotes]);
 
+  const openNoteDetail = (noteId: number) => {
+    router.push({
+      pathname: "/note-detail",
+      params: {
+        noteId: String(noteId),
+      },
+    });
+  };
+
+  const editNote = (noteId: number) => {
+    router.push({
+      pathname: "/add-note",
+      params: {
+        noteId: String(noteId),
+      },
+    });
+  };
+
   const handleSelectMonth = (monthKey: string) => {
     setSelectedMonthKey(monthKey);
     setExpandedGroups({});
@@ -73,20 +92,6 @@ export default function ArchiveNotesScreen() {
     }));
   };
 
-  const toggleNote = async (noteId: number) => {
-    const updatedNotes = notes.map((note) =>
-      note.id === noteId ? { ...note, isCompleted: !note.isCompleted } : note,
-    );
-
-    setNotes(updatedNotes);
-
-    try {
-      await saveStoredNotes(updatedNotes);
-    } catch {
-      Alert.alert("Hata", "Not güncellenirken bir sorun oluştu.");
-    }
-  };
-
   const deleteNote = (noteId: number) => {
     Alert.alert("Notu Sil", "Bu arşiv notunu silmek istiyor musun?", [
       {
@@ -98,6 +103,7 @@ export default function ArchiveNotesScreen() {
         style: "destructive",
         onPress: async () => {
           const updatedNotes = notes.filter((note) => note.id !== noteId);
+
           setNotes(updatedNotes);
 
           try {
@@ -143,7 +149,8 @@ export default function ArchiveNotesScreen() {
                 group={group}
                 isExpanded={!!expandedGroups[group.date]}
                 onToggleGroup={toggleArchiveGroup}
-                onToggleNote={toggleNote}
+                onPressNote={openNoteDetail}
+                onEditNote={editNote}
                 onDeleteNote={deleteNote}
               />
             ))

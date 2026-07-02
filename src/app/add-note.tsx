@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AppButton from "../components/ui/AppButton";
 import AppDateField from "../components/ui/AppDateField";
 import AppDatePickerModal from "../components/ui/AppDatePickerModal";
-import AppIconButton from "../components/ui/AppIconButton";
+import AppPageHeader from "../components/ui/AppPageHeader";
 import { colors } from "../constants/theme";
 import { getStoredNotes, saveStoredNotes } from "../services/noteStorage";
 import { Note, NoteChecklistItem, NoteContentType } from "../types/note";
@@ -65,25 +65,6 @@ export default function AddNoteScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
-  const hasDescriptionContent = useMemo(() => {
-    return description.trim().length > 0;
-  }, [description]);
-
-  const hasChecklistContent = useMemo(() => {
-    return checklistItems.some((item) => item.text.trim().length > 0);
-  }, [checklistItems]);
-
-  const isTypeLocked = useMemo(() => {
-    if (contentType === "text") {
-      return hasDescriptionContent;
-    }
-
-    return hasChecklistContent;
-  }, [contentType, hasDescriptionContent, hasChecklistContent]);
-
-  const isTextButtonDisabled = contentType !== "text" && isTypeLocked;
-  const isChecklistButtonDisabled = contentType !== "checklist" && isTypeLocked;
-
   useEffect(() => {
     if (!noteId) return;
 
@@ -122,22 +103,9 @@ export default function AddNoteScreen() {
   }, [noteId]);
 
   const selectContentType = (nextType: NoteContentType) => {
-    if (nextType === contentType) return;
-
-    if (isTypeLocked) {
-      return;
-    }
-
     setContentType(nextType);
 
-    if (nextType === "text") {
-      setChecklistItems([createEmptyChecklistItem()]);
-      return;
-    }
-
-    setDescription("");
-
-    if (checklistItems.length === 0) {
+    if (nextType === "checklist" && checklistItems.length === 0) {
       setChecklistItems([createEmptyChecklistItem()]);
     }
   };
@@ -227,7 +195,6 @@ export default function AddNoteScreen() {
     }
 
     const nextDescription = contentType === "text" ? description.trim() : "";
-
     const nextChecklistItems =
       contentType === "checklist" ? normalizedChecklistItems : undefined;
 
@@ -287,7 +254,7 @@ export default function AddNoteScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -298,32 +265,14 @@ export default function AddNoteScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <View style={styles.headerTop}>
-              <AppIconButton
-                icon="chevron-back"
-                onPress={() => router.back()}
-                size={43}
-                iconSize={21}
-                iconColor={colors.white}
-                backgroundColor={colors.panel}
-                borderColor={colors.panelBorder}
-                style={styles.backButton}
-              />
-
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>
-                  {isEditing ? "Notu Düzenle" : "Yeni Not"}
-                </Text>
-
-                <Text style={styles.description}>
-                  {isEditing
-                    ? "Not başlığını, tipini, içeriğini veya tarihini güncelle."
-                    : "Önce not tipini seç, sonra notunu oluştur."}
-                </Text>
-              </View>
-            </View>
-          </View>
+          <AppPageHeader
+            title={isEditing ? "Notu Düzenle" : "Yeni Not"}
+            description={
+              isEditing
+                ? "Not başlığını, tipini, içeriğini veya tarihini güncelle."
+                : "Önce not tipini seç, sonra notunu oluştur."
+            }
+          />
 
           <View style={styles.noteTypeCard}>
             <View style={styles.noteTypeHeader}>
@@ -338,20 +287,18 @@ export default function AddNoteScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoTitle}>Not Tipi</Text>
                 <Text style={styles.infoText}>
-                  İçerik yazmaya başladıktan sonra not tipi kilitlenir.
+                  Açıklama veya liste olarak not oluşturabilirsin.
                 </Text>
               </View>
             </View>
 
             <View style={styles.contentTypeRow}>
               <TouchableOpacity
-                activeOpacity={0.84}
-                disabled={isTextButtonDisabled}
+                activeOpacity={0.85}
                 onPress={() => selectContentType("text")}
                 style={[
                   styles.contentTypeButton,
                   contentType === "text" && styles.contentTypeButtonActive,
-                  isTextButtonDisabled && styles.contentTypeButtonDisabled,
                 ]}
               >
                 <Ionicons
@@ -373,13 +320,11 @@ export default function AddNoteScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                activeOpacity={0.84}
-                disabled={isChecklistButtonDisabled}
+                activeOpacity={0.85}
                 onPress={() => selectContentType("checklist")}
                 style={[
                   styles.contentTypeButton,
                   contentType === "checklist" && styles.contentTypeButtonActive,
-                  isChecklistButtonDisabled && styles.contentTypeButtonDisabled,
                 ]}
               >
                 <Ionicons
@@ -410,16 +355,16 @@ export default function AddNoteScreen() {
 
               <View style={styles.inputBox}>
                 <Ionicons
-                  name="sparkles-outline"
-                  size={21}
-                  color={colors.muted}
+                  name="create-outline"
+                  size={19}
+                  color={colors.purpleLight}
                   style={styles.inputIcon}
                 />
 
                 <TextInput
                   value={title}
                   onChangeText={setTitle}
-                  placeholder="Başlık yaz"
+                  placeholder="Not başlığı yaz"
                   placeholderTextColor={colors.mutedLight}
                   style={styles.textInput}
                 />
@@ -432,26 +377,23 @@ export default function AddNoteScreen() {
 
                 <View style={styles.descriptionBox}>
                   <Ionicons
-                    name="document-text-outline"
-                    size={21}
-                    color={colors.muted}
+                    name="reader-outline"
+                    size={19}
+                    color={colors.purpleLight}
                     style={styles.descriptionIcon}
                   />
 
                   <TextInput
                     value={description}
                     onChangeText={setDescription}
-                    placeholder="Notunu yaz"
+                    placeholder="Not açıklaması yaz"
                     placeholderTextColor={colors.mutedLight}
                     style={styles.descriptionInput}
                     multiline
-                    textAlignVertical="top"
                   />
                 </View>
               </View>
-            ) : null}
-
-            {contentType === "checklist" ? (
+            ) : (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Liste</Text>
 
@@ -459,7 +401,7 @@ export default function AddNoteScreen() {
                   {checklistItems.map((item, index) => (
                     <View key={item.id} style={styles.checklistRow}>
                       <TouchableOpacity
-                        activeOpacity={0.82}
+                        activeOpacity={0.85}
                         onPress={() => toggleChecklistItem(item.id)}
                         style={[
                           styles.checklistCheckbox,
@@ -469,8 +411,8 @@ export default function AddNoteScreen() {
                         {item.isCompleted ? (
                           <Ionicons
                             name="checkmark"
-                            size={14}
-                            color={colors.background}
+                            size={15}
+                            color={colors.white}
                           />
                         ) : null}
                       </TouchableOpacity>
@@ -496,14 +438,14 @@ export default function AddNoteScreen() {
 
                       {checklistItems.length > 1 ? (
                         <TouchableOpacity
-                          activeOpacity={0.82}
+                          activeOpacity={0.85}
                           onPress={() => removeChecklistItem(item.id)}
                           style={styles.removeChecklistButton}
                         >
                           <Ionicons
                             name="close"
                             size={18}
-                            color={colors.muted}
+                            color={colors.expense}
                           />
                         </TouchableOpacity>
                       ) : null}
@@ -516,7 +458,7 @@ export default function AddNoteScreen() {
                   imleç alt satıra geçer.
                 </Text>
               </View>
-            ) : null}
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Tarih</Text>
@@ -533,8 +475,10 @@ export default function AddNoteScreen() {
             </View>
 
             <AppButton
-              title={isEditing ? "Değişiklikleri Kaydet" : "Notu Kaydet"}
+              title={isEditing ? "Notu Güncelle" : "Notu Kaydet"}
               onPress={handleSave}
+              variant="purple"
+              height={54}
               style={styles.saveButton}
             />
           </View>
@@ -556,45 +500,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+
   keyboardView: {
     flex: 1,
   },
+
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
+
   contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 32,
   },
-  header: {
-    marginTop: 12,
-  },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  backButton: {
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 4,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: -0.6,
-  },
-  description: {
-    marginTop: 12,
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: "600",
-  },
+
   noteTypeCard: {
     marginTop: 24,
     padding: 16,
@@ -603,11 +523,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.panelBorder,
   },
+
   noteTypeHeader: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 14,
   },
+
   infoIcon: {
     width: 42,
     height: 42,
@@ -619,16 +541,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
+
   infoContent: {
     flex: 1,
     minWidth: 0,
     justifyContent: "center",
   },
+
   infoTitle: {
     color: colors.white,
     fontSize: 14,
     fontWeight: "900",
   },
+
   infoText: {
     marginTop: 4,
     color: colors.muted,
@@ -636,6 +561,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: "600",
   },
+
   card: {
     marginTop: 20,
     padding: 20,
@@ -649,15 +575,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
   },
+
   inputGroup: {
     marginBottom: 14,
   },
+
   label: {
     marginBottom: 7,
     color: colors.white,
     fontSize: 12,
     fontWeight: "900",
   },
+
   inputBox: {
     height: 58,
     borderRadius: 20,
@@ -668,9 +597,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 18,
   },
+
   inputIcon: {
     marginRight: 10,
   },
+
   textInput: {
     flex: 1,
     height: "100%",
@@ -679,6 +610,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     paddingVertical: 0,
   },
+
   descriptionBox: {
     minHeight: 150,
     borderRadius: 22,
@@ -690,10 +622,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 18,
   },
+
   descriptionIcon: {
     marginRight: 10,
     marginTop: 1,
   },
+
   descriptionInput: {
     flex: 1,
     minHeight: 105,
@@ -705,6 +639,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     textAlignVertical: "top",
   },
+
   helperText: {
     marginTop: 8,
     color: colors.muted,
@@ -712,10 +647,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "700",
   },
+
   contentTypeRow: {
     flexDirection: "row",
     gap: 8,
   },
+
   contentTypeButton: {
     flex: 1,
     height: 46,
@@ -728,21 +665,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 7,
   },
+
   contentTypeButtonActive: {
     backgroundColor: colors.purpleSoft,
     borderColor: colors.purpleBorder,
   },
-  contentTypeButtonDisabled: {
-    opacity: 0.42,
-  },
+
   contentTypeText: {
     color: colors.mutedLight,
     fontSize: 12,
     fontWeight: "900",
   },
+
   contentTypeTextActive: {
     color: colors.purple,
   },
+
   checklistBox: {
     minHeight: 150,
     borderRadius: 22,
@@ -752,11 +690,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+
   checklistRow: {
     minHeight: 36,
     flexDirection: "row",
     alignItems: "center",
   },
+
   checklistCheckbox: {
     width: 24,
     height: 24,
@@ -768,10 +708,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 9,
   },
+
   checklistCheckboxActive: {
     backgroundColor: colors.purple,
     borderColor: colors.purpleBorder,
   },
+
   checklistInput: {
     flex: 1,
     minHeight: 36,
@@ -780,10 +722,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     paddingVertical: 0,
   },
+
   checklistInputCompleted: {
     color: colors.muted,
     textDecorationLine: "line-through",
   },
+
   removeChecklistButton: {
     width: 30,
     height: 30,
@@ -792,6 +736,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginLeft: 6,
   },
+
   saveButton: {
     borderRadius: 21,
     shadowColor: colors.purple,

@@ -19,7 +19,7 @@ type NoteCardProps = {
   onView?: (noteId: number) => void;
   onEdit: (noteId: number) => void;
   onDelete: (noteId: number) => void;
-  onToggleChecklistItem: (noteId: number, itemId: number) => void;
+  onToggleChecklistItem?: (noteId: number, itemId: number) => void;
 };
 
 function getManualLinePreview(description: string) {
@@ -42,7 +42,6 @@ export default function NoteCard({
   onView,
   onEdit,
   onDelete,
-  onToggleChecklistItem,
 }: NoteCardProps) {
   const isFuture = type === "future";
 
@@ -93,6 +92,12 @@ export default function NoteCard({
     callback();
   };
 
+  const handleCardPress = () => {
+    if (!onView) return;
+
+    onView(note.id);
+  };
+
   const visibleDescription = note.description
     ? getManualLinePreview(descriptionPreview)
     : "";
@@ -100,11 +105,13 @@ export default function NoteCard({
   return (
     <TouchableOpacity
       activeOpacity={0.86}
-      onPress={() => onToggle(note.id)}
+      onPress={handleCardPress}
       style={[styles.noteCard, note.isCompleted && styles.noteCardCompleted]}
     >
       <View style={styles.noteLeft}>
-        <View
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={(event) => stopAndRun(event, () => onToggle(note.id))}
           style={[
             styles.checkBox,
             note.isCompleted && styles.checkBoxCompleted,
@@ -113,7 +120,7 @@ export default function NoteCard({
           {note.isCompleted ? (
             <Ionicons name="checkmark" size={17} color={colors.background} />
           ) : null}
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.line} />
       </View>
@@ -191,16 +198,7 @@ export default function NoteCard({
         {isChecklistNote ? (
           <View style={styles.checklistPreview}>
             {visibleChecklistItems.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                activeOpacity={0.8}
-                onPress={(event) =>
-                  stopAndRun(event, () =>
-                    onToggleChecklistItem(note.id, item.id),
-                  )
-                }
-                style={styles.checklistPreviewRow}
-              >
+              <View key={item.id} style={styles.checklistPreviewRow}>
                 <View
                   style={[
                     styles.checklistPreviewBox,
@@ -224,7 +222,7 @@ export default function NoteCard({
                 >
                   {item.text}
                 </Text>
-              </TouchableOpacity>
+              </View>
             ))}
 
             {hiddenChecklistItemCount > 0 ? (
