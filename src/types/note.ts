@@ -15,4 +15,8 @@ export type Note = {
   date: string;
   isCompleted: boolean;
   createdAt: string;
+
+  // Bildirim açıldığında dolacak.
+  // Boşsa: okunmamış bildirim kabul edilir.
+  notificationReadAt?: string;
 };

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
 import {
   Modal,
   Pressable,
@@ -15,12 +16,34 @@ type HomeHeaderProps = {
   name?: string;
   dueNotes?: Note[];
   onOpenNotesPress?: () => void;
+  onReadDueNotifications?: (noteIds: number[]) => void;
+};
+
+const getTodayKey = () => {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getNotificationTitle = (note: Note) => {
+  const today = getTodayKey();
+
+  if (note.date === today) {
+    return "Bugün için bir notunuz var";
+  }
+
+  return "Planladığınız bir notun günü geldi";
 };
 
 export default function HomeHeader({
   name,
   dueNotes = [],
   onOpenNotesPress,
+  onReadDueNotifications,
 }: HomeHeaderProps) {
   const hasDueNotes = dueNotes.length > 0;
   const badgeText = dueNotes.length > 9 ? "9+" : String(dueNotes.length);
@@ -28,8 +51,18 @@ export default function HomeHeader({
   const [isNotificationVisible, setIsNotificationVisible] =
     React.useState(false);
 
+  const [visibleNotificationNotes, setVisibleNotificationNotes] =
+    React.useState<Note[]>([]);
+
+  const hasVisibleNotifications = visibleNotificationNotes.length > 0;
+
   const openNotifications = () => {
+    setVisibleNotificationNotes(dueNotes);
     setIsNotificationVisible(true);
+
+    if (dueNotes.length > 0) {
+      onReadDueNotifications?.(dueNotes.map((note) => note.id));
+    }
   };
 
   const closeNotifications = () => {
@@ -88,9 +121,9 @@ export default function HomeHeader({
               </TouchableOpacity>
             </View>
 
-            {hasDueNotes ? (
+            {hasVisibleNotifications ? (
               <View style={styles.notificationList}>
-                {dueNotes.map((note) => (
+                {visibleNotificationNotes.map((note) => (
                   <TouchableOpacity
                     key={note.id}
                     activeOpacity={0.85}
@@ -107,7 +140,7 @@ export default function HomeHeader({
 
                     <View style={styles.notificationTextArea}>
                       <Text style={styles.notificationTitle}>
-                        Önceden planladığınız bir notun günü geldi
+                        {getNotificationTitle(note)}
                       </Text>
 
                       <Text
@@ -148,8 +181,6 @@ export default function HomeHeader({
     </View>
   );
 }
-
-import React from "react";
 
 const styles = StyleSheet.create({
   header: {

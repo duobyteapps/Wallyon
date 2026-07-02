@@ -13,7 +13,7 @@ import { colors } from "../../constants/theme";
 import { useHomeModals } from "../../hooks/useHomeModals";
 import { useTransactionFields } from "../../hooks/useTransactionFields";
 import { useTransactions } from "../../hooks/useTransactions";
-import { getStoredNotes } from "../../services/noteStorage";
+import { getStoredNotes, saveStoredNotes } from "../../services/noteStorage";
 import { getStoredUserName } from "../../services/profileStorage";
 import { Note } from "../../types/note";
 import { Transaction } from "../../types/transaction";
@@ -58,7 +58,12 @@ export default function HomeScreen() {
           const today = getTodayKey();
 
           const activeDueNotes = storedNotes
-            .filter((note) => note.date <= today && !note.isCompleted)
+            .filter(
+              (note) =>
+                note.date <= today &&
+                !note.isCompleted &&
+                !note.notificationReadAt,
+            )
             .sort((a, b) => a.date.localeCompare(b.date));
 
           if (isActive) {
@@ -177,6 +182,32 @@ export default function HomeScreen() {
     );
   };
 
+  const handleReadDueNotifications = async (noteIds: number[]) => {
+    if (noteIds.length === 0) return;
+
+    try {
+      const storedNotes = await getStoredNotes();
+      const readAt = new Date().toISOString();
+
+      const updatedNotes = storedNotes.map((note) =>
+        noteIds.includes(note.id)
+          ? {
+              ...note,
+              notificationReadAt: note.notificationReadAt || readAt,
+            }
+          : note,
+      );
+
+      await saveStoredNotes(updatedNotes);
+
+      setDueNotes((currentNotes) =>
+        currentNotes.filter((note) => !noteIds.includes(note.id)),
+      );
+    } catch (error) {
+      console.log("Notifications could not be marked as read:", error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <ScrollView
@@ -188,6 +219,7 @@ export default function HomeScreen() {
           name={displayName}
           dueNotes={dueNotes}
           onOpenNotesPress={() => router.push("/tabs/notes")}
+          onReadDueNotifications={handleReadDueNotifications}
         />
 
         <BalanceCard remainingBalance={remainingBalance} />
