@@ -108,13 +108,6 @@ export default function AddNoteScreen() {
     }
   };
 
-  const addChecklistItem = () => {
-    setChecklistItems((currentItems) => [
-      ...currentItems,
-      createEmptyChecklistItem(),
-    ]);
-  };
-
   const updateChecklistItemText = (itemId: number, text: string) => {
     setChecklistItems((currentItems) =>
       currentItems.map((item) =>
@@ -149,6 +142,25 @@ export default function AddNoteScreen() {
 
       return currentItems.filter((item) => item.id !== itemId);
     });
+  };
+
+  const handleChecklistSubmit = (itemId: number) => {
+    const currentIndex = checklistItems.findIndex((item) => item.id === itemId);
+
+    if (currentIndex === -1) return;
+
+    const currentItem = checklistItems[currentIndex];
+
+    if (!currentItem.text.trim()) return;
+
+    const isLastItem = currentIndex === checklistItems.length - 1;
+
+    if (!isLastItem) return;
+
+    setChecklistItems((currentItems) => [
+      ...currentItems,
+      createEmptyChecklistItem(),
+    ]);
   };
 
   const handleSave = async () => {
@@ -321,14 +333,6 @@ export default function AddNoteScreen() {
                   activeOpacity={0.85}
                   onPress={() => selectContentType("text")}
                 >
-                  <Ionicons
-                    name="document-text-outline"
-                    size={18}
-                    color={
-                      contentType === "text" ? colors.purple : colors.mutedLight
-                    }
-                  />
-
                   <Text
                     style={[
                       styles.contentTypeText,
@@ -348,16 +352,6 @@ export default function AddNoteScreen() {
                   activeOpacity={0.85}
                   onPress={() => selectContentType("checklist")}
                 >
-                  <Ionicons
-                    name="checkbox-outline"
-                    size={18}
-                    color={
-                      contentType === "checklist"
-                        ? colors.purple
-                        : colors.mutedLight
-                    }
-                  />
-
                   <Text
                     style={[
                       styles.contentTypeText,
@@ -369,10 +363,6 @@ export default function AddNoteScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              <Text style={styles.helperText}>
-                Açıklama veya checkbox’lı liste olarak not oluşturabilirsin.
-              </Text>
             </View>
 
             {contentType === "text" ? (
@@ -427,7 +417,7 @@ export default function AddNoteScreen() {
                         onChangeText={(text) =>
                           updateChecklistItemText(item.id, text)
                         }
-                        placeholder={`Madde ${index + 1}`}
+                        placeholder={index === 0 ? "Liste yaz" : ""}
                         placeholderTextColor={colors.mutedLight}
                         style={[
                           styles.checklistInput,
@@ -435,33 +425,29 @@ export default function AddNoteScreen() {
                         ]}
                         returnKeyType="next"
                         blurOnSubmit={false}
-                        onSubmitEditing={addChecklistItem}
+                        onSubmitEditing={() => handleChecklistSubmit(item.id)}
                       />
 
-                      <TouchableOpacity
-                        style={styles.removeChecklistButton}
-                        activeOpacity={0.8}
-                        onPress={() => removeChecklistItem(item.id)}
-                      >
-                        <Ionicons
-                          name="close"
-                          size={16}
-                          color={colors.mutedLight}
-                        />
-                      </TouchableOpacity>
+                      {checklistItems.length > 1 ? (
+                        <TouchableOpacity
+                          style={styles.removeChecklistButton}
+                          activeOpacity={0.8}
+                          onPress={() => removeChecklistItem(item.id)}
+                        >
+                          <Ionicons
+                            name="close"
+                            size={16}
+                            color={colors.mutedLight}
+                          />
+                        </TouchableOpacity>
+                      ) : null}
                     </View>
                   ))}
-
-                  <TouchableOpacity
-                    style={styles.addChecklistButton}
-                    activeOpacity={0.85}
-                    onPress={addChecklistItem}
-                  >
-                    <Ionicons name="add" size={17} color={colors.purple} />
-
-                    <Text style={styles.addChecklistText}>Yeni madde ekle</Text>
-                  </TouchableOpacity>
                 </View>
+
+                <Text style={styles.helperText}>
+                  Enter ile alt satıra geçtikçe yeni checkbox oluşur.
+                </Text>
               </View>
             )}
 
@@ -685,20 +671,18 @@ const styles = StyleSheet.create({
 
   contentTypeRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
 
   contentTypeButton: {
     flex: 1,
-    height: 52,
-    borderRadius: 18,
+    height: 42,
+    borderRadius: 16,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
   },
 
   contentTypeButtonActive: {
@@ -717,35 +701,31 @@ const styles = StyleSheet.create({
   },
 
   checklistBox: {
+    minHeight: 150,
     borderRadius: 22,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
 
   checklistRow: {
-    minHeight: 48,
+    minHeight: 36,
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 16,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.panelBorder,
-    paddingHorizontal: 12,
-    marginBottom: 10,
   },
 
   checklistCheckbox: {
-    width: 27,
-    height: 27,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.purpleBorder,
     backgroundColor: colors.purpleSoft,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginRight: 9,
   },
 
   checklistCheckboxActive: {
@@ -755,9 +735,9 @@ const styles = StyleSheet.create({
 
   checklistInput: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 36,
     color: colors.white,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
     paddingVertical: 0,
   },
@@ -774,24 +754,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 6,
-  },
-
-  addChecklistButton: {
-    height: 45,
-    borderRadius: 16,
-    backgroundColor: colors.purpleSoft,
-    borderWidth: 1,
-    borderColor: colors.purpleBorder,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-  },
-
-  addChecklistText: {
-    color: colors.purple,
-    fontSize: 12,
-    fontWeight: "900",
   },
 
   saveButton: {
