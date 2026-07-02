@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import BalanceCard from "../../components/home/BalanceCard";
@@ -153,6 +153,30 @@ export default function HomeScreen() {
     resetEditingTransaction();
   };
 
+  const handleDeleteTransaction = (transactionId: number) => {
+    const selectedTransaction = currentMonthTransactions.find(
+      (transaction) => transaction.id === transactionId,
+    );
+
+    const transactionTitle = selectedTransaction?.title || "Bu işlem";
+
+    Alert.alert(
+      "İşlem Silinsin mi?",
+      `"${transactionTitle}" işlemini silmek istediğine emin misin?`,
+      [
+        {
+          text: "Vazgeç",
+          style: "cancel",
+        },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: () => deleteTransaction(transactionId),
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <ScrollView
@@ -185,7 +209,7 @@ export default function HomeScreen() {
           todayText={todayText}
           transactions={currentMonthTransactions}
           onEdit={handleEditTransaction}
-          onDelete={deleteTransaction}
+          onDelete={handleDeleteTransaction}
         />
       </ScrollView>
 

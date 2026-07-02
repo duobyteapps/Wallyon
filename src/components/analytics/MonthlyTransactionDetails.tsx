@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 import { colors } from "../../constants/theme";
 import { MonthlySummary } from "../../utils/analyticsHelpers";
@@ -9,12 +9,14 @@ import Pagination from "../ui/Pagination";
 
 type MonthlyTransactionDetailsProps = {
   selectedMonthData: MonthlySummary | null;
+  onDelete: (transactionId: number) => void;
 };
 
 const MONTHLY_DETAILS_PAGE_SIZE = 5;
 
 export default function MonthlyTransactionDetails({
   selectedMonthData,
+  onDelete,
 }: MonthlyTransactionDetailsProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -41,6 +43,30 @@ export default function MonthlyTransactionDetails({
 
     return transactions.slice(startIndex, endIndex);
   }, [transactions, currentPage]);
+
+  const handleDeleteConfirm = (transactionId: number) => {
+    const selectedTransaction = transactions.find(
+      (transaction) => transaction.id === transactionId,
+    );
+
+    const transactionTitle = selectedTransaction?.title || "Bu işlem";
+
+    Alert.alert(
+      "İşlem Silinsin mi?",
+      `"${transactionTitle}" işlemini silmek istediğine emin misin?`,
+      [
+        {
+          text: "Vazgeç",
+          style: "cancel",
+        },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: () => onDelete(transactionId),
+        },
+      ],
+    );
+  };
 
   if (!selectedMonthData) {
     return null;
@@ -152,7 +178,7 @@ export default function MonthlyTransactionDetails({
             key={transaction.id}
             transaction={transaction}
             onEdit={() => {}}
-            onDelete={() => {}}
+            onDelete={handleDeleteConfirm}
           />
         ))}
 

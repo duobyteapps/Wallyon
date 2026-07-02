@@ -79,6 +79,23 @@ export default function AnalyticsScreen() {
     setSelectedMonthKey(monthKey);
   };
 
+  const handleDeleteTransaction = useCallback((transactionId: number) => {
+    setTransactions((currentTransactions) => {
+      const nextTransactions = currentTransactions.filter(
+        (transaction) => transaction.id !== transactionId,
+      );
+
+      AsyncStorage.setItem(
+        TRANSACTIONS_STORAGE_KEY,
+        JSON.stringify(nextTransactions),
+      ).catch((error) => {
+        console.log("Analytics transaction could not be deleted:", error);
+      });
+
+      return nextTransactions;
+    });
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <ScrollView
@@ -94,7 +111,10 @@ export default function AnalyticsScreen() {
           onSelectMonth={handleSelectMonth}
         />
 
-        <MonthlyTransactionDetails selectedMonthData={selectedMonthData} />
+        <MonthlyTransactionDetails
+          selectedMonthData={selectedMonthData}
+          onDelete={handleDeleteTransaction}
+        />
       </ScrollView>
     </SafeAreaView>
   );
