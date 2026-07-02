@@ -74,6 +74,24 @@ export default function NotesScreen() {
     }));
   };
 
+  const viewNote = (noteId: number) => {
+    router.push({
+      pathname: "/note-detail",
+      params: {
+        noteId: String(noteId),
+      },
+    });
+  };
+
+  const editNote = (noteId: number) => {
+    router.push({
+      pathname: "/add-note",
+      params: {
+        noteId: String(noteId),
+      },
+    });
+  };
+
   const toggleNote = async (noteId: number) => {
     const updatedNotes = notes.map((note) => {
       if (note.id !== noteId) {
@@ -147,15 +165,6 @@ export default function NotesScreen() {
     }
   };
 
-  const editNote = (noteId: number) => {
-    router.push({
-      pathname: "/add-note",
-      params: {
-        noteId: String(noteId),
-      },
-    });
-  };
-
   const deleteNote = (noteId: number) => {
     Alert.alert("Notu Sil", "Bu notu silmek istiyor musun?", [
       {
@@ -209,6 +218,7 @@ export default function NotesScreen() {
                   note={note}
                   type="today"
                   onToggle={toggleNote}
+                  onView={viewNote}
                   onEdit={editNote}
                   onDelete={deleteNote}
                   onToggleChecklistItem={toggleChecklistItem}
@@ -236,6 +246,7 @@ export default function NotesScreen() {
                   isExpanded={!!expandedGroups[group.date]}
                   onToggleGroup={toggleFutureGroup}
                   onToggleNote={toggleNote}
+                  onViewNote={viewNote}
                   onEditNote={editNote}
                   onDeleteNote={deleteNote}
                   onToggleChecklistItem={toggleChecklistItem}

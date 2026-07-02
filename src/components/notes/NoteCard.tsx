@@ -1,6 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  GestureResponderEvent,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { colors } from "../../constants/theme";
 import { Note } from "../../types/note";
@@ -10,6 +16,7 @@ type NoteCardProps = {
   note: Note;
   type: "today" | "future";
   onToggle: (noteId: number) => void;
+  onView?: (noteId: number) => void;
   onEdit: (noteId: number) => void;
   onDelete: (noteId: number) => void;
   onToggleChecklistItem: (noteId: number, itemId: number) => void;
@@ -32,11 +39,13 @@ export default function NoteCard({
   note,
   type,
   onToggle,
+  onView,
   onEdit,
   onDelete,
   onToggleChecklistItem,
 }: NoteCardProps) {
   const isFuture = type === "future";
+
   const [descriptionPreview, setDescriptionPreview] = useState(
     note.description || "",
   );
@@ -79,15 +88,20 @@ export default function NoteCard({
     }
   };
 
+  const stopAndRun = (event: GestureResponderEvent, callback: () => void) => {
+    event.stopPropagation();
+    callback();
+  };
+
   const visibleDescription = note.description
     ? getManualLinePreview(descriptionPreview)
     : "";
 
   return (
     <TouchableOpacity
-      style={[styles.noteCard, note.isCompleted && styles.noteCardCompleted]}
-      activeOpacity={0.85}
+      activeOpacity={0.86}
       onPress={() => onToggle(note.id)}
+      style={[styles.noteCard, note.isCompleted && styles.noteCardCompleted]}
     >
       <View style={styles.noteLeft}>
         <View
@@ -97,7 +111,7 @@ export default function NoteCard({
           ]}
         >
           {note.isCompleted ? (
-            <Ionicons name="checkmark" size={17} color={colors.white} />
+            <Ionicons name="checkmark" size={17} color={colors.background} />
           ) : null}
         </View>
 
@@ -113,8 +127,8 @@ export default function NoteCard({
             ]}
           >
             <Ionicons
-              name={isFuture ? "time-outline" : "sunny-outline"}
-              size={12}
+              name={isFuture ? "calendar-outline" : "today-outline"}
+              size={13}
               color={isFuture ? colors.purpleLight : colors.income}
             />
 
@@ -129,13 +143,24 @@ export default function NoteCard({
           </View>
 
           <View style={styles.actionButtons}>
+            {onView ? (
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={(event) => stopAndRun(event, () => onView(note.id))}
+                style={styles.viewButton}
+              >
+                <Ionicons
+                  name="eye-outline"
+                  size={17}
+                  color={colors.mutedLight}
+                />
+              </TouchableOpacity>
+            ) : null}
+
             <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={(event) => stopAndRun(event, () => onEdit(note.id))}
               style={styles.editButton}
-              activeOpacity={0.8}
-              onPress={(event) => {
-                event.stopPropagation();
-                onEdit(note.id);
-              }}
             >
               <Ionicons
                 name="create-outline"
@@ -145,12 +170,9 @@ export default function NoteCard({
             </TouchableOpacity>
 
             <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={(event) => stopAndRun(event, () => onDelete(note.id))}
               style={styles.deleteButton}
-              activeOpacity={0.8}
-              onPress={(event) => {
-                event.stopPropagation();
-                onDelete(note.id);
-              }}
             >
               <Ionicons name="trash-outline" size={17} color={colors.expense} />
             </TouchableOpacity>
@@ -162,8 +184,6 @@ export default function NoteCard({
             styles.noteTitle,
             note.isCompleted && styles.noteTitleCompleted,
           ]}
-          numberOfLines={2}
-          ellipsizeMode="tail"
         >
           {note.title}
         </Text>
@@ -173,12 +193,13 @@ export default function NoteCard({
             {visibleChecklistItems.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                style={styles.checklistPreviewRow}
                 activeOpacity={0.8}
-                onPress={(event) => {
-                  event.stopPropagation();
-                  onToggleChecklistItem(note.id, item.id);
-                }}
+                onPress={(event) =>
+                  stopAndRun(event, () =>
+                    onToggleChecklistItem(note.id, item.id),
+                  )
+                }
+                style={styles.checklistPreviewRow}
               >
                 <View
                   style={[
@@ -187,7 +208,11 @@ export default function NoteCard({
                   ]}
                 >
                   {item.isCompleted ? (
-                    <Ionicons name="checkmark" size={12} color={colors.white} />
+                    <Ionicons
+                      name="checkmark"
+                      size={13}
+                      color={colors.background}
+                    />
                   ) : null}
                 </View>
 
@@ -196,8 +221,6 @@ export default function NoteCard({
                     styles.checklistPreviewText,
                     item.isCompleted && styles.checklistPreviewTextCompleted,
                   ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
                 >
                   {item.text}
                 </Text>
@@ -213,6 +236,7 @@ export default function NoteCard({
         ) : note.description ? (
           <Text
             style={styles.noteDescription}
+            numberOfLines={3}
             onTextLayout={handleDescriptionLayout}
           >
             {visibleDescription}
@@ -308,6 +332,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  viewButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 13,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.panelBorder,
+    alignItems: "center",
+    justifyContent: "center",
   },
   editButton: {
     width: 34,

@@ -11,6 +11,7 @@ type NoteDateGroupProps = {
   isExpanded: boolean;
   onToggleGroup: (date: string) => void;
   onToggleNote: (noteId: number) => void;
+  onViewNote?: (noteId: number) => void;
   onEditNote: (noteId: number) => void;
   onDeleteNote: (noteId: number) => void;
   onToggleChecklistItem: (noteId: number, itemId: number) => void;
@@ -21,6 +22,7 @@ export default function NoteDateGroup({
   isExpanded,
   onToggleGroup,
   onToggleNote,
+  onViewNote,
   onEditNote,
   onDeleteNote,
   onToggleChecklistItem,
@@ -28,15 +30,19 @@ export default function NoteDateGroup({
   return (
     <View style={styles.dateGroup}>
       <TouchableOpacity
+        activeOpacity={0.84}
+        onPress={() => onToggleGroup(group.date)}
         style={[
           styles.dateGroupHeader,
           isExpanded && styles.dateGroupHeaderActive,
         ]}
-        activeOpacity={0.85}
-        onPress={() => onToggleGroup(group.date)}
       >
         <View style={styles.dateGroupIcon}>
-          <Ionicons name="calendar-outline" size={15} color={colors.purple} />
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color={colors.purpleLight}
+          />
         </View>
 
         <View style={styles.dateGroupTextWrapper}>
@@ -50,6 +56,7 @@ export default function NoteDateGroup({
 
         <View style={styles.dateGroupRight}>
           <Text style={styles.dateGroupCount}>{group.notes.length}</Text>
+
           <Ionicons
             name={isExpanded ? "chevron-up" : "chevron-down"}
             size={18}
@@ -66,6 +73,7 @@ export default function NoteDateGroup({
               note={note}
               type="future"
               onToggle={onToggleNote}
+              onView={onViewNote}
               onEdit={onEditNote}
               onDelete={onDeleteNote}
               onToggleChecklistItem={onToggleChecklistItem}
