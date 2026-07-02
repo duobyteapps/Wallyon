@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { colors } from "../../constants/theme";
@@ -13,17 +14,17 @@ type NoteCardProps = {
   onDelete: (noteId: number) => void;
 };
 
-function getDescriptionPreview(description: string) {
-  const lines = description
+function getManualLinePreview(description: string) {
+  const manualLines = description
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length <= 2) {
+  if (manualLines.length <= 2) {
     return description;
   }
 
-  return `${lines.slice(0, 2).join("\n")}\n...`;
+  return `${manualLines.slice(0, 2).join("\n")}\n...`;
 }
 
 export default function NoteCard({
@@ -34,6 +35,38 @@ export default function NoteCard({
   onDelete,
 }: NoteCardProps) {
   const isFuture = type === "future";
+  const [descriptionPreview, setDescriptionPreview] = useState(
+    note.description || "",
+  );
+
+  useEffect(() => {
+    setDescriptionPreview(note.description || "");
+  }, [note.description]);
+
+  const handleDescriptionLayout = (event: any) => {
+    if (!note.description) return;
+
+    const lines = event.nativeEvent.lines;
+
+    if (lines.length <= 2) {
+      return;
+    }
+
+    const firstTwoLines = lines
+      .slice(0, 2)
+      .map((line: { text: string }) => line.text.trim())
+      .filter(Boolean);
+
+    const nextPreview = `${firstTwoLines.join("\n")}\n...`;
+
+    if (nextPreview !== descriptionPreview) {
+      setDescriptionPreview(nextPreview);
+    }
+  };
+
+  const visibleDescription = note.description
+    ? getManualLinePreview(descriptionPreview)
+    : "";
 
   return (
     <TouchableOpacity
@@ -121,8 +154,11 @@ export default function NoteCard({
         </Text>
 
         {note.description ? (
-          <Text style={styles.noteDescription}>
-            {getDescriptionPreview(note.description)}
+          <Text
+            style={styles.noteDescription}
+            onTextLayout={handleDescriptionLayout}
+          >
+            {visibleDescription}
           </Text>
         ) : null}
       </View>
