@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
 import { colors } from "../../constants/theme";
 import { Note } from "../../types/note";
 import { NoteGroup, formatNoteDate } from "../../utils/noteUtils";
@@ -10,6 +11,7 @@ type NoteDateGroupProps = {
   isExpanded: boolean;
   onToggleGroup: (date: string) => void;
   onToggleNote: (noteId: number) => void;
+  onEditNote: (noteId: number) => void;
   onDeleteNote: (noteId: number) => void;
 };
 
@@ -18,6 +20,7 @@ export default function NoteDateGroup({
   isExpanded,
   onToggleGroup,
   onToggleNote,
+  onEditNote,
   onDeleteNote,
 }: NoteDateGroupProps) {
   return (
@@ -61,6 +64,7 @@ export default function NoteDateGroup({
               note={note}
               type="future"
               onToggle={onToggleNote}
+              onEdit={onEditNote}
               onDelete={onDeleteNote}
             />
           ))}

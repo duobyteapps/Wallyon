@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
 import { colors } from "../../constants/theme";
 import { Note } from "../../types/note";
 import { getNoteBadgeText } from "../../utils/noteUtils";
@@ -8,13 +9,28 @@ type NoteCardProps = {
   note: Note;
   type: "today" | "future";
   onToggle: (noteId: number) => void;
+  onEdit: (noteId: number) => void;
   onDelete: (noteId: number) => void;
 };
+
+function getDescriptionPreview(description: string) {
+  const lines = description
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 2) {
+    return description;
+  }
+
+  return `${lines.slice(0, 2).join("\n")}\n...`;
+}
 
 export default function NoteCard({
   note,
   type,
   onToggle,
+  onEdit,
   onDelete,
 }: NoteCardProps) {
   const isFuture = type === "future";
@@ -64,13 +80,33 @@ export default function NoteCard({
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.deleteButton}
-            activeOpacity={0.8}
-            onPress={() => onDelete(note.id)}
-          >
-            <Ionicons name="trash-outline" size={17} color={colors.expense} />
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.editButton}
+              activeOpacity={0.8}
+              onPress={(event) => {
+                event.stopPropagation();
+                onEdit(note.id);
+              }}
+            >
+              <Ionicons
+                name="create-outline"
+                size={17}
+                color={colors.purpleLight}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              activeOpacity={0.8}
+              onPress={(event) => {
+                event.stopPropagation();
+                onDelete(note.id);
+              }}
+            >
+              <Ionicons name="trash-outline" size={17} color={colors.expense} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Text
@@ -79,13 +115,14 @@ export default function NoteCard({
             note.isCompleted && styles.noteTitleCompleted,
           ]}
           numberOfLines={2}
+          ellipsizeMode="tail"
         >
           {note.title}
         </Text>
 
         {note.description ? (
-          <Text style={styles.noteDescription} numberOfLines={2}>
-            {note.description}
+          <Text style={styles.noteDescription}>
+            {getDescriptionPreview(note.description)}
           </Text>
         ) : null}
       </View>
@@ -173,6 +210,21 @@ const styles = StyleSheet.create({
   },
   futureBadgeText: {
     color: colors.purpleLight,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  editButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 13,
+    backgroundColor: colors.purpleSoft,
+    borderWidth: 1,
+    borderColor: colors.purpleBorder,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButton: {
     width: 34,

@@ -2,6 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import NoteCard from "../../components/notes/NoteCard";
 import NoteDateGroup from "../../components/notes/NoteDateGroup";
 import NoteEmptyState from "../../components/notes/NoteEmptyState";
@@ -87,6 +88,15 @@ export default function NotesScreen() {
     }
   };
 
+  const editNote = (noteId: number) => {
+    router.push({
+      pathname: "/add-note",
+      params: {
+        noteId: String(noteId),
+      },
+    });
+  };
+
   const deleteNote = (noteId: number) => {
     Alert.alert("Notu Sil", "Bu notu silmek istiyor musun?", [
       {
@@ -140,6 +150,7 @@ export default function NotesScreen() {
                   note={note}
                   type="today"
                   onToggle={toggleNote}
+                  onEdit={editNote}
                   onDelete={deleteNote}
                 />
               ))
@@ -165,6 +176,7 @@ export default function NotesScreen() {
                   isExpanded={!!expandedGroups[group.date]}
                   onToggleGroup={toggleFutureGroup}
                   onToggleNote={toggleNote}
+                  onEditNote={editNote}
                   onDeleteNote={deleteNote}
                 />
               ))

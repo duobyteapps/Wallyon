@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import AppButton from "../components/ui/AppButton";
 import AppDateField from "../components/ui/AppDateField";
 import AppDatePickerModal from "../components/ui/AppDatePickerModal";
@@ -29,11 +30,55 @@ const formatStorageDate = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const parseStorageDate = (date: string) => {
+  const [year, month, day] = date.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return new Date();
+  }
+
+  return new Date(year, month - 1, day);
+};
+
 export default function AddNoteScreen() {
+  const { noteId } = useLocalSearchParams<{ noteId?: string }>();
+
+  const isEditing = useMemo(() => {
+    return !!noteId;
+  }, [noteId]);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+
+  useEffect(() => {
+    if (!noteId) return;
+
+    const loadEditingNote = async () => {
+      try {
+        const notes = await getStoredNotes();
+
+        const editingNote = notes.find(
+          (note) => String(note.id) === String(noteId),
+        );
+
+        if (!editingNote) {
+          Alert.alert("Hata", "Düzenlenecek not bulunamadı.");
+          router.back();
+          return;
+        }
+
+        setTitle(editingNote.title);
+        setDescription(editingNote.description || "");
+        setSelectedDate(parseStorageDate(editingNote.date));
+      } catch {
+        Alert.alert("Hata", "Not bilgileri yüklenirken bir sorun oluştu.");
+      }
+    };
+
+    loadEditingNote();
+  }, [noteId]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -43,6 +88,23 @@ export default function AddNoteScreen() {
 
     try {
       const notes = await getStoredNotes();
+
+      if (isEditing && noteId) {
+        const updatedNotes = notes.map((note) =>
+          String(note.id) === String(noteId)
+            ? {
+                ...note,
+                title: title.trim(),
+                description: description.trim(),
+                date: formatStorageDate(selectedDate),
+              }
+            : note,
+        );
+
+        await saveStoredNotes(updatedNotes);
+        router.back();
+        return;
+      }
 
       const newNote: Note = {
         id: Date.now(),
@@ -56,7 +118,12 @@ export default function AddNoteScreen() {
       await saveStoredNotes([newNote, ...notes]);
       router.back();
     } catch {
-      Alert.alert("Hata", "Not kaydedilirken bir sorun oluştu.");
+      Alert.alert(
+        "Hata",
+        isEditing
+          ? "Not güncellenirken bir sorun oluştu."
+          : "Not kaydedilirken bir sorun oluştu.",
+      );
     }
   };
 
@@ -85,27 +152,35 @@ export default function AddNoteScreen() {
                 style={styles.backButton}
               />
 
-              <Text style={styles.title}>Yeni Not</Text>
+              <Text style={styles.title}>
+                {isEditing ? "Notu Düzenle" : "Yeni Not"}
+              </Text>
             </View>
 
             <Text style={styles.description}>
-              Bugün veya ileri tarih için yapılacak not oluştur.
+              {isEditing
+                ? "Not başlığını, açıklamasını veya tarihini güncelle."
+                : "Bugün veya ileri tarih için yapılacak not oluştur."}
             </Text>
           </View>
 
           <View style={styles.infoCard}>
             <View style={styles.infoIcon}>
               <Ionicons
-                name="calendar-outline"
+                name={isEditing ? "create-outline" : "calendar-outline"}
                 size={20}
                 color={colors.purple}
               />
             </View>
 
             <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>İleri tarihli not</Text>
+              <Text style={styles.infoTitle}>
+                {isEditing ? "Not düzenleme" : "İleri tarihli not"}
+              </Text>
               <Text style={styles.infoText}>
-                Günü gelince notların arasında görünür.
+                {isEditing
+                  ? "Kaydettiğinde mevcut not bilgileri güncellenir."
+                  : "Günü gelince notların arasında görünür."}
               </Text>
             </View>
           </View>
@@ -170,7 +245,7 @@ export default function AddNoteScreen() {
             </View>
 
             <AppButton
-              title="Notu Kaydet"
+              title={isEditing ? "Notu Güncelle" : "Notu Kaydet"}
               onPress={handleSave}
               variant="purple"
               height={58}
