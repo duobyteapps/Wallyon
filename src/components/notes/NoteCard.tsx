@@ -12,6 +12,7 @@ type NoteCardProps = {
   onToggle: (noteId: number) => void;
   onEdit: (noteId: number) => void;
   onDelete: (noteId: number) => void;
+  onToggleChecklistItem: (noteId: number, itemId: number) => void;
 };
 
 function getManualLinePreview(description: string) {
@@ -33,11 +34,25 @@ export default function NoteCard({
   onToggle,
   onEdit,
   onDelete,
+  onToggleChecklistItem,
 }: NoteCardProps) {
   const isFuture = type === "future";
   const [descriptionPreview, setDescriptionPreview] = useState(
     note.description || "",
   );
+
+  const isChecklistNote =
+    note.contentType === "checklist" &&
+    !!note.checklistItems &&
+    note.checklistItems.length > 0;
+
+  const visibleChecklistItems = isChecklistNote
+    ? note.checklistItems!.slice(0, 3)
+    : [];
+
+  const hiddenChecklistItemCount = isChecklistNote
+    ? note.checklistItems!.length - visibleChecklistItems.length
+    : 0;
 
   useEffect(() => {
     setDescriptionPreview(note.description || "");
@@ -153,7 +168,49 @@ export default function NoteCard({
           {note.title}
         </Text>
 
-        {note.description ? (
+        {isChecklistNote ? (
+          <View style={styles.checklistPreview}>
+            {visibleChecklistItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.checklistPreviewRow}
+                activeOpacity={0.8}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onToggleChecklistItem(note.id, item.id);
+                }}
+              >
+                <View
+                  style={[
+                    styles.checklistPreviewBox,
+                    item.isCompleted && styles.checklistPreviewBoxCompleted,
+                  ]}
+                >
+                  {item.isCompleted ? (
+                    <Ionicons name="checkmark" size={12} color={colors.white} />
+                  ) : null}
+                </View>
+
+                <Text
+                  style={[
+                    styles.checklistPreviewText,
+                    item.isCompleted && styles.checklistPreviewTextCompleted,
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.text}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            {hiddenChecklistItemCount > 0 ? (
+              <Text style={styles.checklistMoreText}>
+                +{hiddenChecklistItemCount} madde daha
+              </Text>
+            ) : null}
+          </View>
+        ) : note.description ? (
           <Text
             style={styles.noteDescription}
             onTextLayout={handleDescriptionLayout}
@@ -288,5 +345,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontWeight: "600",
+  },
+  checklistPreview: {
+    marginTop: 7,
+  },
+  checklistPreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  checklistPreviewBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.purpleBorder,
+    backgroundColor: colors.purpleSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  checklistPreviewBoxCompleted: {
+    backgroundColor: colors.income,
+    borderColor: colors.incomeBorder,
+  },
+  checklistPreviewText: {
+    flex: 1,
+    color: colors.mutedLight,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
+  checklistPreviewTextCompleted: {
+    color: colors.muted,
+    textDecorationLine: "line-through",
+  },
+  checklistMoreText: {
+    marginTop: 6,
+    marginLeft: 30,
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "700",
   },
 });

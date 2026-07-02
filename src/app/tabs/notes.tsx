@@ -75,9 +75,35 @@ export default function NotesScreen() {
   };
 
   const toggleNote = async (noteId: number) => {
-    const updatedNotes = notes.map((note) =>
-      note.id === noteId ? { ...note, isCompleted: !note.isCompleted } : note,
-    );
+    const updatedNotes = notes.map((note) => {
+      if (note.id !== noteId) {
+        return note;
+      }
+
+      if (
+        note.contentType === "checklist" &&
+        note.checklistItems &&
+        note.checklistItems.length > 0
+      ) {
+        const shouldCompleteAll = !note.checklistItems.every(
+          (item) => item.isCompleted,
+        );
+
+        return {
+          ...note,
+          checklistItems: note.checklistItems.map((item) => ({
+            ...item,
+            isCompleted: shouldCompleteAll,
+          })),
+          isCompleted: shouldCompleteAll,
+        };
+      }
+
+      return {
+        ...note,
+        isCompleted: !note.isCompleted,
+      };
+    });
 
     setNotes(updatedNotes);
 
@@ -85,6 +111,39 @@ export default function NotesScreen() {
       await saveStoredNotes(updatedNotes);
     } catch {
       Alert.alert("Hata", "Not güncellenirken bir sorun oluştu.");
+    }
+  };
+
+  const toggleChecklistItem = async (noteId: number, itemId: number) => {
+    const updatedNotes = notes.map((note) => {
+      if (note.id !== noteId || !note.checklistItems) {
+        return note;
+      }
+
+      const nextChecklistItems = note.checklistItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              isCompleted: !item.isCompleted,
+            }
+          : item,
+      );
+
+      return {
+        ...note,
+        checklistItems: nextChecklistItems,
+        isCompleted:
+          nextChecklistItems.length > 0 &&
+          nextChecklistItems.every((item) => item.isCompleted),
+      };
+    });
+
+    setNotes(updatedNotes);
+
+    try {
+      await saveStoredNotes(updatedNotes);
+    } catch {
+      Alert.alert("Hata", "Liste maddesi güncellenirken bir sorun oluştu.");
     }
   };
 
@@ -152,6 +211,7 @@ export default function NotesScreen() {
                   onToggle={toggleNote}
                   onEdit={editNote}
                   onDelete={deleteNote}
+                  onToggleChecklistItem={toggleChecklistItem}
                 />
               ))
             ) : (
@@ -178,6 +238,7 @@ export default function NotesScreen() {
                   onToggleNote={toggleNote}
                   onEditNote={editNote}
                   onDeleteNote={deleteNote}
+                  onToggleChecklistItem={toggleChecklistItem}
                 />
               ))
             ) : (
