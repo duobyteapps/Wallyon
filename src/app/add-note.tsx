@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -53,6 +53,8 @@ export default function AddNoteScreen() {
   const isEditing = useMemo(() => {
     return !!noteId;
   }, [noteId]);
+
+  const checklistInputRefs = useRef<Record<number, TextInput | null>>({});
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -142,6 +144,14 @@ export default function AddNoteScreen() {
 
       return currentItems.filter((item) => item.id !== itemId);
     });
+
+    delete checklistInputRefs.current[itemId];
+  };
+
+  const focusChecklistItem = (itemId: number) => {
+    setTimeout(() => {
+      checklistInputRefs.current[itemId]?.focus();
+    }, 80);
   };
 
   const handleChecklistSubmit = (itemId: number) => {
@@ -153,14 +163,17 @@ export default function AddNoteScreen() {
 
     if (!currentItem.text.trim()) return;
 
-    const isLastItem = currentIndex === checklistItems.length - 1;
+    const nextExistingItem = checklistItems[currentIndex + 1];
 
-    if (!isLastItem) return;
+    if (nextExistingItem) {
+      focusChecklistItem(nextExistingItem.id);
+      return;
+    }
 
-    setChecklistItems((currentItems) => [
-      ...currentItems,
-      createEmptyChecklistItem(),
-    ]);
+    const nextItem = createEmptyChecklistItem();
+
+    setChecklistItems((currentItems) => [...currentItems, nextItem]);
+    focusChecklistItem(nextItem.id);
   };
 
   const handleSave = async () => {
@@ -273,29 +286,83 @@ export default function AddNoteScreen() {
 
             <Text style={styles.description}>
               {isEditing
-                ? "Not başlığını, açıklamasını veya tarihini güncelle."
-                : "Bugün veya ileri tarih için yapılacak not oluştur."}
+                ? "Not başlığını, tipini, içeriğini veya tarihini güncelle."
+                : "Önce not tipini seç, sonra notunu oluştur."}
             </Text>
           </View>
 
-          <View style={styles.infoCard}>
-            <View style={styles.infoIcon}>
-              <Ionicons
-                name={isEditing ? "create-outline" : "calendar-outline"}
-                size={20}
-                color={colors.purple}
-              />
+          <View style={styles.noteTypeCard}>
+            <View style={styles.noteTypeHeader}>
+              <View style={styles.infoIcon}>
+                <Ionicons
+                  name={contentType === "checklist" ? "list" : "document-text"}
+                  size={20}
+                  color={colors.purple}
+                />
+              </View>
+
+              <View style={styles.infoContent}>
+                <Text style={styles.infoTitle}>Not Tipi</Text>
+                <Text style={styles.infoText}>
+                  Açıklama veya liste olarak not oluşturabilirsin.
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>
-                {isEditing ? "Not düzenleme" : "İleri tarihli not"}
-              </Text>
-              <Text style={styles.infoText}>
-                {isEditing
-                  ? "Kaydettiğinde mevcut not bilgileri güncellenir."
-                  : "Günü gelince notların arasında görünür."}
-              </Text>
+            <View style={styles.contentTypeRow}>
+              <TouchableOpacity
+                style={[
+                  styles.contentTypeButton,
+                  contentType === "text" && styles.contentTypeButtonActive,
+                ]}
+                activeOpacity={0.85}
+                onPress={() => selectContentType("text")}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={18}
+                  color={
+                    contentType === "text" ? colors.purple : colors.mutedLight
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.contentTypeText,
+                    contentType === "text" && styles.contentTypeTextActive,
+                  ]}
+                >
+                  Açıklama
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.contentTypeButton,
+                  contentType === "checklist" && styles.contentTypeButtonActive,
+                ]}
+                activeOpacity={0.85}
+                onPress={() => selectContentType("checklist")}
+              >
+                <Ionicons
+                  name="list-outline"
+                  size={18}
+                  color={
+                    contentType === "checklist"
+                      ? colors.purple
+                      : colors.mutedLight
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.contentTypeText,
+                    contentType === "checklist" && styles.contentTypeTextActive,
+                  ]}
+                >
+                  Liste
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -318,50 +385,6 @@ export default function AddNoteScreen() {
                   placeholderTextColor={colors.mutedLight}
                   style={styles.textInput}
                 />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Not Tipi</Text>
-
-              <View style={styles.contentTypeRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.contentTypeButton,
-                    contentType === "text" && styles.contentTypeButtonActive,
-                  ]}
-                  activeOpacity={0.85}
-                  onPress={() => selectContentType("text")}
-                >
-                  <Text
-                    style={[
-                      styles.contentTypeText,
-                      contentType === "text" && styles.contentTypeTextActive,
-                    ]}
-                  >
-                    Açıklama
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.contentTypeButton,
-                    contentType === "checklist" &&
-                      styles.contentTypeButtonActive,
-                  ]}
-                  activeOpacity={0.85}
-                  onPress={() => selectContentType("checklist")}
-                >
-                  <Text
-                    style={[
-                      styles.contentTypeText,
-                      contentType === "checklist" &&
-                        styles.contentTypeTextActive,
-                    ]}
-                  >
-                    Liste
-                  </Text>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -413,6 +436,9 @@ export default function AddNoteScreen() {
                       </TouchableOpacity>
 
                       <TextInput
+                        ref={(input) => {
+                          checklistInputRefs.current[item.id] = input;
+                        }}
                         value={item.text}
                         onChangeText={(text) =>
                           updateChecklistItemText(item.id, text)
@@ -446,7 +472,8 @@ export default function AddNoteScreen() {
                 </View>
 
                 <Text style={styles.helperText}>
-                  Enter ile alt satıra geçtikçe yeni checkbox oluşur.
+                  Klavyedeki ileri tuşuna bastığında yeni checkbox oluşur ve
+                  imleç alt satıra geçer.
                 </Text>
               </View>
             )}
@@ -539,16 +566,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  infoCard: {
+  noteTypeCard: {
     marginTop: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 16,
     borderRadius: 26,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
+  },
+
+  noteTypeHeader: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 14,
   },
 
   infoIcon: {
@@ -676,13 +706,15 @@ const styles = StyleSheet.create({
 
   contentTypeButton: {
     flex: 1,
-    height: 42,
-    borderRadius: 16,
+    height: 46,
+    borderRadius: 17,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.panelBorder,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 7,
   },
 
   contentTypeButtonActive: {
