@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsHeader from "../../components/analytics/AnalyticsHeader";
 import MonthlySummaryCard from "../../components/analytics/MonthlySummaryCard";
 import MonthlyTransactionDetails from "../../components/analytics/MonthlyTransactionDetails";
+import TransactionDetailModal from "../../components/transaction/TransactionDetailModal";
 import { colors } from "../../constants/theme";
 import { Transaction } from "../../types/transaction";
 import { getMonthlyAnalyticsData } from "../../utils/analyticsHelpers";
@@ -16,6 +17,8 @@ const TRANSACTIONS_STORAGE_KEY = "WALLYON_TRANSACTIONS";
 export default function AnalyticsScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -113,9 +116,16 @@ export default function AnalyticsScreen() {
 
         <MonthlyTransactionDetails
           selectedMonthData={selectedMonthData}
+          onPress={setSelectedTransaction}
           onDelete={handleDeleteTransaction}
         />
       </ScrollView>
+
+      <TransactionDetailModal
+        visible={selectedTransaction !== null}
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -125,12 +135,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-
   contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,

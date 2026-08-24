@@ -9,6 +9,7 @@ import HomeHeader from "../../components/home/HomeHeader";
 import HomeSummarySection from "../../components/home/HomeSummarySection";
 import HomeTransactionModals from "../../components/home/HomeTransactionModals";
 import RecentTransactionsCard from "../../components/home/RecentTransactionsCard";
+import TransactionDetailModal from "../../components/transaction/TransactionDetailModal";
 import { colors } from "../../constants/theme";
 import { useHomeModals } from "../../hooks/useHomeModals";
 import { useTransactionFields } from "../../hooks/useTransactionFields";
@@ -21,7 +22,6 @@ import { formatTodayTR } from "../../utils/transactionDateUtils";
 
 const getTodayKey = () => {
   const today = new Date();
-
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const day = String(today.getDate()).padStart(2, "0");
@@ -35,6 +35,8 @@ export default function HomeScreen() {
 
   const [storedName, setStoredName] = useState("");
   const [dueNotes, setDueNotes] = useState<Note[]>([]);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
 
   const todayText = formatTodayTR();
 
@@ -114,32 +116,25 @@ export default function HomeScreen() {
 
   const {
     editingTransaction,
-
     isIncomeModalVisible,
     isIncomeFieldsModalVisible,
     isExpenseModalVisible,
     isExpenseFieldsModalVisible,
     isInvestmentModalVisible,
     isInvestmentFieldsModalVisible,
-
     resetEditingTransaction,
-
     openIncomeModal,
     openExpenseModal,
     openInvestmentModal,
-
     closeIncomeModal,
     closeExpenseModal,
     closeInvestmentModal,
-
     openIncomeFieldsModal,
     openExpenseFieldsModal,
     openInvestmentFieldsModal,
-
     closeIncomeFieldsModal,
     closeExpenseFieldsModal,
     closeInvestmentFieldsModal,
-
     handleEditTransaction,
   } = useHomeModals();
 
@@ -240,10 +235,17 @@ export default function HomeScreen() {
         <RecentTransactionsCard
           todayText={todayText}
           transactions={currentMonthTransactions}
+          onPress={setSelectedTransaction}
           onEdit={handleEditTransaction}
           onDelete={handleDeleteTransaction}
         />
       </ScrollView>
+
+      <TransactionDetailModal
+        visible={selectedTransaction !== null}
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+      />
 
       <HomeTransactionModals
         editingTransaction={editingTransaction}
@@ -284,12 +286,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-
   contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,

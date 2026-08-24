@@ -12,6 +12,7 @@ const RECENT_TRANSACTIONS_PAGE_SIZE = 5;
 type RecentTransactionsCardProps = {
   todayText: string;
   transactions: Transaction[];
+  onPress: (transaction: Transaction) => void;
   onEdit: (transaction: Transaction) => void;
   onDelete: (transactionId: number) => void;
 };
@@ -19,6 +20,7 @@ type RecentTransactionsCardProps = {
 export default function RecentTransactionsCard({
   todayText,
   transactions,
+  onPress,
   onEdit,
   onDelete,
 }: RecentTransactionsCardProps) {
@@ -52,7 +54,6 @@ export default function RecentTransactionsCard({
     <View style={styles.transactionsCard}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Son İşlemler</Text>
-
         <Text style={styles.todayText}>{todayText}</Text>
       </View>
 
@@ -68,6 +69,7 @@ export default function RecentTransactionsCard({
             <TransactionItem
               key={item.id}
               transaction={item}
+              onPress={onPress}
               onEdit={onEdit}
               onDelete={onDelete}
             />

@@ -6,6 +6,7 @@ import { formatCurrency } from "../../utils/formatCurrency";
 
 type TransactionItemProps = {
   transaction: Transaction;
+  onPress?: (transaction: Transaction) => void;
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (transactionId: number) => void;
   showActions?: boolean;
@@ -42,6 +43,7 @@ const getAmountPrefix = (type: TransactionType) => {
 
 export default function TransactionItem({
   transaction,
+  onPress,
   onEdit,
   onDelete,
   showActions = true,
@@ -49,7 +51,11 @@ export default function TransactionItem({
   const transactionColor = getTransactionColor(transaction.type);
 
   return (
-    <View style={styles.transactionItem}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      style={styles.transactionItem}
+      onPress={() => onPress?.(transaction)}
+    >
       <View style={styles.transactionLeft}>
         <View
           style={[
@@ -99,7 +105,10 @@ export default function TransactionItem({
           <TouchableOpacity
             activeOpacity={0.8}
             style={[styles.actionButton, styles.editButton]}
-            onPress={() => onEdit?.(transaction)}
+            onPress={(event) => {
+              event.stopPropagation();
+              onEdit?.(transaction);
+            }}
           >
             <Ionicons
               name="create-outline"
@@ -111,13 +120,16 @@ export default function TransactionItem({
           <TouchableOpacity
             activeOpacity={0.8}
             style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => onDelete?.(transaction.id)}
+            onPress={(event) => {
+              event.stopPropagation();
+              onDelete?.(transaction.id);
+            }}
           >
             <Ionicons name="trash-outline" size={17} color={colors.expense} />
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 

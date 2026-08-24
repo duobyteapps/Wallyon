@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
 import { colors } from "../../constants/theme";
+import { Transaction } from "../../types/transaction";
 import { MonthlySummary } from "../../utils/analyticsHelpers";
 import { formatCurrency } from "../../utils/formatCurrency";
 import TransactionItem from "../home/TransactionItem";
@@ -9,6 +10,7 @@ import Pagination from "../ui/Pagination";
 
 type MonthlyTransactionDetailsProps = {
   selectedMonthData: MonthlySummary | null;
+  onPress: (transaction: Transaction) => void;
   onDelete: (transactionId: number) => void;
 };
 
@@ -16,10 +18,10 @@ const MONTHLY_DETAILS_PAGE_SIZE = 5;
 
 export default function MonthlyTransactionDetails({
   selectedMonthData,
+  onPress,
   onDelete,
 }: MonthlyTransactionDetailsProps) {
   const [currentPage, setCurrentPage] = useState(1);
-
   const transactions = selectedMonthData?.transactions || [];
 
   const totalPages = Math.max(
@@ -177,7 +179,7 @@ export default function MonthlyTransactionDetails({
           <TransactionItem
             key={transaction.id}
             transaction={transaction}
-            onEdit={() => {}}
+            onPress={onPress}
             onDelete={handleDeleteConfirm}
           />
         ))}
@@ -212,17 +214,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.panelBorder,
   },
-
   header: {
     marginBottom: 18,
   },
-
   title: {
     color: colors.white,
     fontSize: 26,
     fontWeight: "900",
   },
-
   description: {
     marginTop: 8,
     color: colors.muted,
@@ -230,12 +229,10 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: "600",
   },
-
   summaryGrid: {
     flexDirection: "row",
     gap: 8,
   },
-
   summaryBox: {
     flex: 1,
     minHeight: 54,
@@ -246,19 +243,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-
   summaryLabel: {
     color: colors.label,
     fontSize: 10,
     fontWeight: "800",
   },
-
   summaryValue: {
     marginTop: 4,
     fontSize: 12,
     fontWeight: "900",
   },
-
   balanceBox: {
     marginTop: 12,
     minHeight: 58,
@@ -271,18 +265,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
-
   balanceLabel: {
     color: colors.label,
     fontSize: 13,
     fontWeight: "800",
   },
-
   balanceValue: {
     fontSize: 16,
     fontWeight: "900",
   },
-
   transactionsHeader: {
     marginTop: 24,
     marginBottom: 6,
@@ -290,23 +281,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   transactionsTitle: {
     color: colors.white,
     fontSize: 18,
     fontWeight: "900",
   },
-
   transactionsCount: {
     color: colors.purpleLight,
     fontSize: 12,
     fontWeight: "800",
   },
-
   transactionsList: {
     marginTop: 2,
   },
-
   emptyState: {
     minHeight: 100,
     alignItems: "center",
@@ -314,14 +301,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 20,
   },
-
   emptyStateTitle: {
     color: colors.white,
     fontSize: 15,
     fontWeight: "900",
     textAlign: "center",
   },
-
   emptyStateText: {
     marginTop: 8,
     color: colors.muted,
