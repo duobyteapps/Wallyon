@@ -1,14 +1,9 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import NameOnlyCard from "../../components/onboarding/NameOnlyCard";
+import AppKeyboardAvoidingView from "../../components/ui/AppKeyboardAvoidingView";
 import { colors } from "../../constants/theme";
 import { saveStoredUserName } from "../../services/profileStorage";
 
@@ -40,10 +35,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <AppKeyboardAvoidingView style={styles.keyboardView}>
         <View style={styles.container}>
           <NameOnlyCard
             name={name}
@@ -51,7 +43,7 @@ export default function OnboardingScreen() {
             onStart={handleStart}
           />
         </View>
-      </KeyboardAvoidingView>
+      </AppKeyboardAvoidingView>
     </SafeAreaView>
   );
 }
