@@ -12,6 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../../utils/formatCurrency";
 
 import { colors } from "../../constants/theme";
 import { Transaction } from "../../types/transaction";
@@ -101,7 +105,9 @@ export default function ExpenseTransactionModal({
       const parsedDate = parseTransactionDate(editTransaction.date);
 
       setSelectedField(editTransaction.title);
-      setAmount(String(editTransaction.amount));
+      setAmount(
+        formatCurrencyInput(String(editTransaction.amount).replace(".", ",")),
+      );
       setNote(editTransaction.note || "");
       setIsInstallment(false);
       setInstallmentCount("1");
@@ -127,7 +133,7 @@ export default function ExpenseTransactionModal({
   };
 
   const handleSave = () => {
-    const parsedAmount = Number(amount.replace(",", "."));
+    const parsedAmount = parseCurrencyInput(amount);
     const parsedInstallmentCount = Number(installmentCount);
 
     if (!selectedField) {
@@ -280,8 +286,10 @@ export default function ExpenseTransactionModal({
 
                     <AppInput
                       value={amount}
-                      onChangeText={setAmount}
-                      keyboardType="numeric"
+                      onChangeText={(value) =>
+                        setAmount(formatCurrencyInput(value))
+                      }
+                      keyboardType="decimal-pad"
                       placeholder="0"
                       style={styles.input}
                     />

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Transaction } from "../types/transaction";
 import {
@@ -13,36 +14,38 @@ export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
-  useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        const storedTransactions = await AsyncStorage.getItem(
-          TRANSACTIONS_STORAGE_KEY,
-        );
+  useFocusEffect(
+    useCallback(() => {
+      const loadTransactions = async () => {
+        try {
+          const storedTransactions = await AsyncStorage.getItem(
+            TRANSACTIONS_STORAGE_KEY,
+          );
 
-        if (!storedTransactions) {
+          if (!storedTransactions) {
+            setTransactions([]);
+            return;
+          }
+
+          const parsedTransactions = JSON.parse(storedTransactions);
+
+          if (Array.isArray(parsedTransactions)) {
+            setTransactions(parsedTransactions as Transaction[]);
+            return;
+          }
+
           setTransactions([]);
-          return;
+        } catch (error) {
+          console.log("Transactions could not be loaded:", error);
+          setTransactions([]);
+        } finally {
+          setIsStorageLoaded(true);
         }
+      };
 
-        const parsedTransactions = JSON.parse(storedTransactions);
-
-        if (Array.isArray(parsedTransactions)) {
-          setTransactions(parsedTransactions as Transaction[]);
-          return;
-        }
-
-        setTransactions([]);
-      } catch (error) {
-        console.log("Transactions could not be loaded:", error);
-        setTransactions([]);
-      } finally {
-        setIsStorageLoaded(true);
-      }
-    };
-
-    loadTransactions();
-  }, []);
+      loadTransactions();
+    }, []),
+  );
 
   useEffect(() => {
     if (!isStorageLoaded) return;

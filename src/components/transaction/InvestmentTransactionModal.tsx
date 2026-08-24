@@ -10,6 +10,10 @@ import {
   Text,
   View,
 } from "react-native";
+import {
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../../utils/formatCurrency";
 
 import { colors } from "../../constants/theme";
 import { Transaction } from "../../types/transaction";
@@ -87,7 +91,9 @@ export default function InvestmentTransactionModal({
 
     if (editTransaction) {
       setSelectedField(editTransaction.title);
-      setAmount(String(editTransaction.amount));
+      setAmount(
+        formatCurrencyInput(String(editTransaction.amount).replace(".", ",")),
+      );
       setNote(editTransaction.note || "");
       setSelectedDate(parseTransactionDate(editTransaction.date));
       setIsSelectOpen(false);
@@ -109,7 +115,7 @@ export default function InvestmentTransactionModal({
   };
 
   const handleSave = () => {
-    const parsedAmount = Number(amount.replace(",", "."));
+    const parsedAmount = parseCurrencyInput(amount);
 
     if (!selectedField) {
       Alert.alert("Uyarı", "Lütfen kategori seç.");
@@ -194,8 +200,10 @@ export default function InvestmentTransactionModal({
 
                     <AppInput
                       value={amount}
-                      onChangeText={setAmount}
-                      keyboardType="numeric"
+                      onChangeText={(value) =>
+                        setAmount(formatCurrencyInput(value))
+                      }
+                      keyboardType="decimal-pad"
                       placeholder="0"
                       style={styles.input}
                     />
