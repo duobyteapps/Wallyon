@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AnalyticsHeader from "../../components/analytics/AnalyticsHeader";
@@ -11,6 +11,7 @@ import TransactionDetailModal from "../../components/transaction/TransactionDeta
 import { colors } from "../../constants/theme";
 import { Transaction } from "../../types/transaction";
 import { getMonthlyAnalyticsData } from "../../utils/analyticsHelpers";
+import { createMonthlyReport } from "../../utils/monthlyReport";
 
 const TRANSACTIONS_STORAGE_KEY = "WALLYON_TRANSACTIONS";
 
@@ -19,6 +20,7 @@ export default function AnalyticsScreen() {
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+  const [isCreatingReport, setIsCreatingReport] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -82,6 +84,26 @@ export default function AnalyticsScreen() {
     setSelectedMonthKey(monthKey);
   };
 
+  const handleDownloadReport = async () => {
+    if (!selectedMonthData || isCreatingReport) {
+      return;
+    }
+
+    try {
+      setIsCreatingReport(true);
+      await createMonthlyReport(selectedMonthData);
+    } catch (error) {
+      console.log("Monthly report could not be created:", error);
+
+      Alert.alert(
+        "Rapor Oluşturulamadı",
+        "Aylık rapor oluşturulurken bir hata meydana geldi.",
+      );
+    } finally {
+      setIsCreatingReport(false);
+    }
+  };
+
   const handleDeleteTransaction = useCallback((transactionId: number) => {
     setTransactions((currentTransactions) => {
       const nextTransactions = currentTransactions.filter(
@@ -118,6 +140,8 @@ export default function AnalyticsScreen() {
           selectedMonthData={selectedMonthData}
           onPress={setSelectedTransaction}
           onDelete={handleDeleteTransaction}
+          onDownload={handleDownloadReport}
+          downloadDisabled={!selectedMonthData || isCreatingReport}
         />
       </ScrollView>
 

@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { colors } from "../../constants/theme";
 import { Transaction } from "../../types/transaction";
@@ -12,6 +13,8 @@ type MonthlyTransactionDetailsProps = {
   selectedMonthData: MonthlySummary | null;
   onPress: (transaction: Transaction) => void;
   onDelete: (transactionId: number) => void;
+  onDownload: () => void;
+  downloadDisabled?: boolean;
 };
 
 const MONTHLY_DETAILS_PAGE_SIZE = 5;
@@ -20,8 +23,11 @@ export default function MonthlyTransactionDetails({
   selectedMonthData,
   onPress,
   onDelete,
+  onDownload,
+  downloadDisabled = false,
 }: MonthlyTransactionDetailsProps) {
   const [currentPage, setCurrentPage] = useState(1);
+
   const transactions = selectedMonthData?.transactions || [];
 
   const totalPages = Math.max(
@@ -77,7 +83,25 @@ export default function MonthlyTransactionDetails({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>{selectedMonthData.monthLabel}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{selectedMonthData.monthLabel}</Text>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={onDownload}
+            disabled={downloadDisabled}
+            style={[
+              styles.downloadButton,
+              downloadDisabled && styles.downloadButtonDisabled,
+            ]}
+          >
+            <Ionicons
+              name="download-outline"
+              size={20}
+              color={colors.purpleLight}
+            />
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.description}>
           Bu ay yapılan işlemler son işlemler görünümünde listelenir.
@@ -217,10 +241,28 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 18,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   title: {
     color: colors.white,
     fontSize: 26,
     fontWeight: "900",
+  },
+  downloadButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.purpleSoft,
+    borderWidth: 1,
+    borderColor: colors.purpleBorder,
+  },
+  downloadButtonDisabled: {
+    opacity: 0.35,
   },
   description: {
     marginTop: 8,
