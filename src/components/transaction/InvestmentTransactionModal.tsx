@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +20,7 @@ import AppButton from "../ui/AppButton";
 import AppDateField from "../ui/AppDateField";
 import AppDatePickerModal from "../ui/AppDatePickerModal";
 import AppInput from "../ui/AppInput";
+import AppKeyboardAvoidingView from "../ui/AppKeyboardAvoidingView";
 import AppSelectBox from "../ui/AppSelectBox";
 
 type InvestmentTransactionModalProps = {
@@ -151,10 +150,7 @@ export default function InvestmentTransactionModal({
         statusBarTranslucent
       >
         <Pressable style={styles.backdrop} onPress={handleClose}>
-          <KeyboardAvoidingView
-            style={styles.keyboardView}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-          >
+          <AppKeyboardAvoidingView style={styles.keyboardView}>
             <Pressable
               style={styles.modalCard}
               onPress={(event) => event.stopPropagation()}
@@ -259,9 +255,8 @@ export default function InvestmentTransactionModal({
                 useNativeModal={false}
               />
             </Pressable>
-          </KeyboardAvoidingView>
+          </AppKeyboardAvoidingView>
         </Pressable>
-        x
       </Modal>
     </>
   );

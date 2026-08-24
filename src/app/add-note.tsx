@@ -3,8 +3,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AppButton from "../components/ui/AppButton";
 import AppDateField from "../components/ui/AppDateField";
 import AppDatePickerModal from "../components/ui/AppDatePickerModal";
+import AppKeyboardAvoidingView from "../components/ui/AppKeyboardAvoidingView";
 import AppPageHeader from "../components/ui/AppPageHeader";
 import { colors } from "../constants/theme";
 import { getStoredNotes, saveStoredNotes } from "../services/noteStorage";
@@ -274,10 +273,7 @@ export default function AddNoteScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <AppKeyboardAvoidingView style={styles.keyboardView}>
         <ScrollView
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
@@ -516,7 +512,7 @@ export default function AddNoteScreen() {
           onClose={() => setIsDatePickerVisible(false)}
           onConfirm={setSelectedDate}
         />
-      </KeyboardAvoidingView>
+      </AppKeyboardAvoidingView>
     </SafeAreaView>
   );
 }
